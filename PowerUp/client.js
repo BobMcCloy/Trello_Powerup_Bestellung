@@ -1,6 +1,6 @@
 /* global TrelloPowerUp */
 
-var GRAY_ICON = 'https://renner-trello.de.cool/icon-gray.svg';
+var GRAY_ICON = './icon-gray.svg';
 
 TrelloPowerUp.initialize({
 
