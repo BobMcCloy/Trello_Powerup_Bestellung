@@ -1,0 +1,185 @@
+:root {
+    --trello-blue: #0079BF;
+    --trello-blue-hover: #026AA7;
+    --text-dark: #172B4D;
+    --text-light: #5E6C84;
+    --border: #DFE1E6;
+    --bg-subtle: #F4F5F7;
+    --bg-hover: #EBECF0;
+    --bg-main: #ffffff;
+    --radius: 8px;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    margin: 0;
+    background: var(--bg-main);
+    color: var(--text-dark);
+    transition: background 0.2s, color 0.2s;
+}
+
+body.auswertung { padding: 14px; }
+body.karte { padding: 10px 14px; }
+
+/* --- Gemeinsame Elemente --- */
+button {
+    background: var(--trello-blue);
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+button:hover { background: var(--trello-blue-hover); }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* --- Tabellen Layout --- */
+.tabellen-rahmen {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-top: 6px;
+}
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+thead th {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-light);
+    background: var(--bg-subtle);
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+}
+th.zahl, td.zahl { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tbody td { padding: 9px 10px; border-bottom: 1px solid #f0f1f2; color: var(--text-dark); }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover:not(.group-header) td { background: var(--bg-hover); }
+tfoot td {
+    font-weight: 700;
+    background: var(--bg-subtle);
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+    padding: 9px 10px;
+}
+
+/* --- Pills & Status --- */
+.umsatz-pill, .preis-pill, .status-pill {
+    display: inline-block;
+    background: var(--bg-subtle);
+    color: var(--text-dark);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 12px;
+    white-space: nowrap;
+}
+.status-pill.zulauf { background: #FFD57B; color: #172B4D; }
+.leer {
+    color: var(--text-light);
+    font-size: 13px;
+    padding: 18px 0;
+    text-align: center;
+    font-style: italic;
+    background: var(--bg-subtle);
+    border-radius: var(--radius);
+}
+
+/* --- Tabs & Gruppierungen --- */
+.tabs { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 2px solid var(--border); }
+.tab-btn { background: transparent; color: var(--text-light); border: none; padding: 10px 16px; font-size: 14px; font-weight: bold; border-radius: 4px 4px 0 0; cursor: pointer; transition: color 0.1s; margin-bottom: -2px; }
+.tab-btn.active { color: var(--trello-blue); border-bottom: 2px solid var(--trello-blue); }
+.tab-btn:hover:not(.active) { background: var(--bg-hover); }
+
+/* Optisch starke Hervorhebung der Hierarchien */
+.group-header.card-header td {
+    background: var(--trello-blue);
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px;
+    border-bottom: none !important;
+}
+.group-header.main-header td {
+    background: var(--bg-hover);
+    color: var(--text-dark);
+    font-weight: 700;
+    font-size: 12px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border) !important;
+}
+
+/* --- Manager Buttons --- */
+button.action-btn { padding: 4px 8px; font-size: 11px; }
+button.btn-zulauf { background: #FFD57B; color: #172B4D; border: 1px solid #D9B464; }
+button.btn-zulauf:hover { background: #E6C06F; }
+button.btn-vorhanden { background: var(--bg-subtle); color: var(--text-dark); border: 1px solid var(--border); }
+button.btn-vorhanden:hover { background: var(--border); }
+
+/* --- Kopfzeile & Buttons (Auswertung) --- */
+.header-bereich {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+}
+.header-bereich img { max-height: 48px; margin-right: 12px; }
+.header-bereich h2 { margin: 0; color: var(--text-dark); font-size: 16px; font-weight: 700; }
+.knopf-reihe { display: flex; gap: 8px; margin-bottom: 10px; }
+.knopf-reihe button, #neuladen { background: var(--bg-main); color: var(--trello-blue); border: 1.5px solid var(--trello-blue); }
+.knopf-reihe button:hover, #neuladen:hover { background: var(--bg-subtle); }
+
+/* --- Inputs & Eingabemaske --- */
+.filter-bar, .eingabemaske {
+    display: flex;
+    background: var(--bg-subtle);
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    margin-bottom: 14px;
+    gap: 10px;
+}
+.filter-bar { flex-direction: column; }
+.eingabemaske { align-items: flex-end; }
+.filter-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.input-group { display: flex; flex-direction: column; flex-grow: 1; }
+.input-group label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-light);
+    margin-bottom: 4px;
+}
+input[type="text"], input[type="number"], input[type="date"], select {
+    padding: 7px 9px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    width: 100%;
+    background: var(--bg-main);
+    color: var(--text-dark);
+    transition: border-color 0.1s, box-shadow 0.1s;
+}
+input:focus, select:focus { border-color: var(--trello-blue); outline: none; box-shadow: 0 0 0 2px rgba(0, 121, 191, 0.25); }
+
+.checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-dark); cursor: pointer; padding: 4px 0; }
+.checkbox-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--trello-blue); cursor: pointer; }
+
+/* --- Druck --- */
+.status { color: var(--text-light); font-size: 13px; margin: 10px 0; }
+.fehler { color: #B04632; font-size: 13px; margin-top: 8px; }
+.druck-kopf { display: none; }
+@media print {
+    .no-print { display: none !important; }
+    body { padding: 0; background: #fff !important; color: #000 !important; }
+    .header-bereich { border-bottom: 2px solid var(--text-dark); }
+    .druck-kopf { display: block; font-size: 12px; color: var(--text-light); margin-bottom: 10px; }
+    .tabellen-rahmen { border: 1px solid #000; }
+    tbody tr:hover:not(.group-header) td { background: none; }
+}

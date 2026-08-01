@@ -1,0 +1,19 @@
+{
+  "name": "Blumenladen Produktliste",
+  "details": "Stk / Produkt / Preis Eingabe pro Bestellung, automatisch als Tabelle auf jeder Karte.",
+  "icon": {
+    "url": "https://renner-trello.de.cool/icon.svg",
+    "monochrome": "https://renner-trello.de.cool/icon-gray.svg"
+  },
+  "capabilities": [
+    "card-badges",
+    "card-back-section",
+    "board-buttons"
+  ],
+  "connectors": {
+    "iframe": {
+      "url": "https://renner-trello.de.cool/index.html"
+    }
+  },
+  "author": "basti"
+}

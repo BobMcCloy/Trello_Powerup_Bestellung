@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Produkt-Auswertung</title>
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+
+  <!-- Lade die Konfigurationsdatei mit den Trello Keys (darf nicht auf GitHub!) -->
+  <script src="./config.js"></script>
+
+  <link rel="stylesheet" href="./hell.css">
+  <link rel="stylesheet" href="./dunkel.css">
+
+
+</head>
+
+<body class="auswertung">
+
+  <div class="header-bereich">
+    <img src="https://renner-trello.de.cool/icon.svg" alt="Firmenlogo">
+    <h2>Auswertung & Bestell-Manager</h2>
+  </div>
+
+  <div class="druck-kopf" id="druck-kopf"></div>
+
+  <div id="auth-bereich" class="no-print">
+    <p class="status">Zugriff auf die Trello-API wird benötigt, um alle Karten auszulesen.</p>
+    <button id="autorisieren">Autorisieren</button>
+  </div>
+
+  <datalist id="katalog-liste"></datalist>
+
+  <div id="ergebnis" style="display:none;">
+
+    <!-- Tab Navigation -->
+    <div class="tabs no-print">
+      <button class="tab-btn active" data-tab="auswertung" onclick="switchTab('auswertung')">📊 Auswertung</button>
+      <button class="tab-btn" data-tab="manager" onclick="switchTab('manager')">🚚 Bestell-Manager</button>
+    </div>
+
+    <!-- Filterbereich -->
+    <div class="filter-bar no-print">
+      <div class="filter-row">
+        <div class="input-group">
+          <label>Trello-Liste</label>
+          <select id="filter-liste">
+            <option value="all">Lädt Listen...</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>Fällig von</label><input type="date" id="filter-datum-von">
+        </div>
+        <div class="input-group">
+          <label>Fällig bis</label><input type="date" id="filter-datum-bis">
+        </div>
+        <div class="input-group" style="justify-content: flex-end;">
+          <label class="checkbox-label">
+            <input type="checkbox" id="ohne-datum">
+            Ohne Datum einbeziehen
+          </label>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <div class="input-group">
+          <label>Unterartikel Status</label>
+          <select id="filter-status">
+            <option value="all">Alle anzeigen</option>
+            <option value="bestellen">Muss bestellt werden</option>
+            <option value="zulauf">Im Zulauf</option>
+            <option value="vorhanden">Vorhanden</option>
+          </select>
+        </div>
+        <div class="input-group" style="flex-grow: 2;">
+          <label>Artikelsuche (Haupt- & Unterartikel)</label>
+          <input type="text" id="filter-suche" list="katalog-liste" placeholder="Tippen oder aus Liste wählen...">
+        </div>
+      </div>
+
+      <!-- Gruppierungs-Optionen -->
+      <div class="filter-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);">
+        <label class="checkbox-label"><input type="checkbox" id="opt-group-card"> Nach Karte gruppieren</label>
+        <label class="checkbox-label"><input type="checkbox" id="opt-group-parent"> Unterartikel dem Hauptartikel
+          unterordnen</label>
+      </div>
+    </div>
+
+    <div class="knopf-reihe no-print">
+      <button id="neuladen">Daten neu laden</button>
+      <button id="csv-export">CSV exportieren</button>
+      <button id="pdf-export">Als PDF exportieren</button>
+    </div>
+
+    <div id="status" class="status"></div>
+    <div id="tabelle"></div>
+  </div>
+
+  <script src="./board.js"></script>
+</body>
+
+</html>

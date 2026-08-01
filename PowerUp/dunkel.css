@@ -1,0 +1,10 @@
+[data-theme="dark"] {
+    --trello-blue: #579DFF;
+    --trello-blue-hover: #85B8FF;
+    --text-dark: #B6C2CF;
+    --text-light: #8C9BAB;
+    --border: #3A444C;
+    --bg-subtle: #22272B;
+    --bg-hover: #2C333A;
+    --bg-main: #22272B;
+}
