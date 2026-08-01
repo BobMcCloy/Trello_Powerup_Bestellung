@@ -4,30 +4,40 @@ Ein maßgeschneidertes, Open-Source Trello Power-Up zur nahtlosen Erfassung, Ver
 
 ## ✨ Features
 
-* **Haupt- und Unterartikel:** Erfassung von Artikeln mit Stückzahl und Preis. Unterartikel können an Hauptartikel angehängt und mit einem Bestellstatus ("Muss bestellt werden" / "Vorhanden") versehen werden.
+* **Haupt- und Unterartikel:** Erfassung von Artikeln mit Stückzahl und Preis. Unterartikel können an Hauptartikel angehängt und mit einem Bestellstatus ("Zu bestellen" / "Im Zulauf" / "Vorhanden") versehen werden.
 * **Zentraler Katalog:** Eine integrierte, board-weite Vorschlagsliste, die bei der Eingabe unterstützt und direkt über Trello verwaltet wird.
-* **Sauberes UI:** Dateneingabe über aufgeräumte Overlays (Popups) innerhalb der Karte, um den Platz optimal zu nutzen.
+* **Sauberes UI & Architektur:** Dateneingabe über aufgeräumte Overlays (Popups) innerhalb der Karte. Die Codebasis ist modular in separierte `.html` und `.js` Dateien aufgeteilt.
 * **Native Trello-Integration:** Daten werden über die `pluginData`-API direkt im Trello-Speicher gesichert. Es wird **keine** externe Datenbank benötigt.
 * **Umfangreiche Auswertung:** Ein Klick auf den Board-Button öffnet ein Dashboard zur Filterung aller Bestellungen nach Trello-Liste, Fälligkeitsdatum, Status und freier Textsuche.
+* **Bestell-Manager:** Eigenes Tab für den schnellen Überblick über alle noch offenen Bestellungen, inklusive Direkt-Buttons zum Ändern des Status.
 * **Export & Druck:** Ergebnisse der Auswertung können als CSV exportiert oder im Kiosk-Modus direkt als PDF gedruckt werden.
 * **Dark Mode:** Vollständige und automatische Unterstützung des nativen Trello Dark Modes.
 
 ## 📁 Dateistruktur
 
+Der gesamte ausführbare Code des Power-Ups befindet sich im Ordner `PowerUp/`:
+
 * `manifest.json` - Trello Konfiguration und Rechte
-* `index.html` - Einstiegspunkt für den Iframe-Connector
-* `board.html` - Board-Ansicht: Auswertung, Filter und Bestell-Manager
-* `table.html` - Kartenrückseite: Anzeige und Eingabe der Bestellungen
-* `menu.html` / `katalog.html` - Verwaltungs-UIs
+* `index.html` & `client.js` - Einstiegspunkt für den Iframe-Connector
+* `config.example.js` - Vorlage für die Trello-API Zugangsdaten
+* `board.html` / `board.js` - Dashboard: Auswertung, Filter und Bestell-Manager
+* `table.html` / `table.js` - Kartenrückseite: Anzeige und Eingabe
+* `menu.html` / `katalog.html` - Verwaltungs-UIs mit zugehörigen `.js` Skripten
 * `hell.css` / `dunkel.css` - Styling für Light & Dark Mode
 * `icon.svg` / `icon-gray.svg` - Power-Up Icons
 
 ## 🚀 Hosting & Setup
 
-Alle Dateien dieses Repositories müssen per HTTPS erreichbar sein (Trello lädt Power-Ups per Iframe). Lade die Dateien auf deinen Webspace (z. B. lima-city) oder nutze einen Webserver.
+Alle Dateien aus dem `PowerUp/`-Ordner müssen per HTTPS erreichbar sein (Trello lädt Power-Ups per Iframe). Lade die Dateien auf deinen Webspace (z. B. lima-city) oder nutze einen Webserver.
 
-### URLs anpassen
-In den Dateien `manifest.json`, `index.html` und `board.html` müssen die absoluten URLs (`https://renner-trello.de.cool/...`) durch deine tatsächliche Domain ersetzt werden. Intern verwendet der Code bereits sichere, relative Pfade (`./`).
+### 1. Konfiguration (WICHTIG)
+Damit das Power-Up Daten über die Trello-Rest-API auslesen kann, benötigt es Zugangsdaten:
+1. Kopiere im Ordner `PowerUp/` die Datei `config.example.js` und benenne die Kopie in `config.js` um.
+2. Trage in der neuen `config.js` deinen Trello App-Key (`TRELLO_APP_KEY`) sowie deine Power-Up ID (`POWERUP_ID`) ein.
+*(Hinweis: Die `config.js` wird durch die `.gitignore` automatisch vor dem Upload zu GitHub geschützt, damit deine Schlüssel privat bleiben.)*
+
+### 2. URLs anpassen
+In den Dateien `manifest.json`, `index.html` und `board.html` müssen die fest hinterlegten absoluten URLs (z.B. `https://renner-trello.de.cool/...`) durch deine tatsächliche Server-Domain ersetzt werden. Intern verwendet der Code sichere, relative Pfade (`./`).
 
 ## ⚙️ Power-Up in Trello registrieren
 
