@@ -1,6 +1,6 @@
 /* global TrelloPowerUp */
 
-var GRAY_ICON = './icon-gray.svg';
+var GRAY_ICON = CONFIG.BASE_URL + 'icon-gray.svg';
 
 TrelloPowerUp.initialize({
 
