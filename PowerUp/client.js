@@ -38,6 +38,31 @@ TrelloPowerUp.initialize({
                          height: 250 // Die Höhe passt sich durch t.sizeTo() in der HTML automatisch an
       }
     };
+  },
+
+  'show-settings': function (t, options) {
+    return t.popup({
+      title: 'Einstellungen',
+      url: './settings.html',
+      height: 350
+    });
+  },
+
+  'authorization-status': function(t, options) {
+    return t.getRestApi().isAuthorized().then(function(isAuthorized) {
+      return { authorized: isAuthorized };
+    });
+  },
+
+  'show-authorization': function(t, options) {
+    return t.popup({
+      title: 'Trello Autorisierung',
+      url: './auth.html',
+      height: 140
+    });
   }
 
+}, {
+  appKey: CONFIG.TRELLO_APP_KEY,
+  appName: 'Blumenladen Produktliste'
 });

@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <title>Katalog verwalten</title>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
-  <link rel="stylesheet" href="./hell.css">
-  <link rel="stylesheet" href="./dunkel.css">
+  <link rel="stylesheet" href="./hell.css?v=2">
+  <link rel="stylesheet" href="./dunkel.css?v=2">
   <style>
     .katalog-liste {
       list-style: none;
@@ -20,7 +20,6 @@
       justify-content: space-between;
       padding: 8px 10px;
       border-bottom: 1px solid var(--border);
-      font-size: 14px;
     }
     .katalog-liste li:last-child { border-bottom: none; }
     .katalog-liste li:hover { background: var(--bg-hover); }
@@ -29,8 +28,12 @@
       gap: 10px;
       margin-bottom: 14px;
     }
-    .neue-zeile input { flex-grow: 1; }
-    .hinweis { color: var(--text-light); font-size: 13px; margin-bottom: 10px; }
+    .neue-zeile input[type="text"] { flex-grow: 2; }
+    .neue-zeile input[type="number"] { width: 80px; }
+    .neue-zeile select { width: 130px; }
+    .hinweis { color: var(--text-light); margin-bottom: 10px; }
+    .katalog-info { color: var(--text-light); display: flex; gap: 8px; margin-top: 4px; }
+    .katalog-name-container { display: flex; flex-direction: column; }
   </style>
 </head>
 <body class="auswertung">
@@ -41,7 +44,11 @@
   </p>
 
   <div class="neue-zeile">
-    <input type="text" id="neuer-eintrag" placeholder="Neuer Katalog-Eintrag...">
+    <input type="text" id="neuer-eintrag" placeholder="Neuer Artikel...">
+    <input type="number" id="neuer-preis" placeholder="Preis (€)" step="0.01">
+    <select id="neuer-lieferant">
+      <option value="">- Lade Lieferanten -</option>
+    </select>
     <button id="hinzufuegen">Hinzufügen</button>
   </div>
 
@@ -49,6 +56,8 @@
     <ul class="katalog-liste" id="liste"></ul>
   </div>
 
+  <script src="./config.js"></script>
+  <script src="./utils.js"></script>
   <script src="./katalog.js"></script>
 </body>
 </html>

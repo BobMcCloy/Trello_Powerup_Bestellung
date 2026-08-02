@@ -3,8 +3,8 @@
     --trello-blue-hover: #85B8FF;
     --text-dark: #B6C2CF;
     --text-light: #8C9BAB;
-    --border: #3A444C;
-    --bg-subtle: #22272B;
-    --bg-hover: #2C333A;
+    --border: rgba(166, 197, 226, 0.16);
+    --bg-subtle: rgba(166, 197, 226, 0.04);
+    --bg-hover: rgba(166, 197, 226, 0.08);
     --bg-main: #22272B;
 }

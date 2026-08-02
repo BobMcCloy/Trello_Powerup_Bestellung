@@ -1,4 +1,8 @@
-var t = TrelloPowerUp.iframe();
+/* global TrelloPowerUp, CONFIG */
+var t = TrelloPowerUp.iframe({
+  appKey: CONFIG.TRELLO_APP_KEY,
+  appName: 'Blumenladen Produktliste'
+});
 
 document.getElementById('btn-auswertung').addEventListener('click', function () {
   t.modal({

@@ -9,8 +9,8 @@
   <!-- Lade die Konfigurationsdatei mit den Trello Keys (darf nicht auf GitHub!) -->
   <script src="./config.js"></script>
 
-  <link rel="stylesheet" href="./hell.css">
-  <link rel="stylesheet" href="./dunkel.css">
+  <link rel="stylesheet" href="./hell.css?v=2">
+  <link rel="stylesheet" href="./dunkel.css?v=2">
 
 
 </head>
@@ -54,7 +54,7 @@
         <div class="input-group">
           <label>Fällig bis</label><input type="date" id="filter-datum-bis">
         </div>
-        <div class="input-group" style="justify-content: flex-end;">
+        <div class="input-group flex-end">
           <label class="checkbox-label">
             <input type="checkbox" id="ohne-datum">
             Ohne Datum einbeziehen
@@ -72,14 +72,21 @@
             <option value="vorhanden">Vorhanden</option>
           </select>
         </div>
-        <div class="input-group" style="flex-grow: 2;">
+        <div class="input-group">
+          <label>Lieferant</label>
+          <select id="filter-lieferant">
+            <option value="all">Alle</option>
+            <option value="none">Keinen</option>
+          </select>
+        </div>
+        <div class="input-group flex-grow-2">
           <label>Artikelsuche (Haupt- & Unterartikel)</label>
           <input type="text" id="filter-suche" list="katalog-liste" placeholder="Tippen oder aus Liste wählen...">
         </div>
       </div>
 
       <!-- Gruppierungs-Optionen -->
-      <div class="filter-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);">
+      <div class="filter-row filter-group-options">
         <label class="checkbox-label"><input type="checkbox" id="opt-group-card"> Nach Karte gruppieren</label>
         <label class="checkbox-label"><input type="checkbox" id="opt-group-parent"> Unterartikel dem Hauptartikel
           unterordnen</label>
@@ -90,12 +97,26 @@
       <button id="neuladen">Daten neu laden</button>
       <button id="csv-export">CSV exportieren</button>
       <button id="pdf-export">Als PDF exportieren</button>
+      <button id="text-export" style="display:none;">Als Text kopieren</button>
     </div>
 
     <div id="status" class="status"></div>
     <div id="tabelle"></div>
   </div>
 
+  <!-- OVERLAY: Text-Export -->
+  <div id="overlay-text-export" class="overlay-bg text-export-overlay" style="display:none;">
+    <div class="overlay-box text-export-box">
+      <div class="overlay-header-export">
+        <h3>Bestell-Liste für E-Mail</h3>
+        <button onclick="document.getElementById('overlay-text-export').style.display='none'">✕</button>
+      </div>
+      <p class="overlay-desc">Kopiere den folgenden Text und füge ihn in deine E-Mail ein:</p>
+      <textarea id="text-export-area" class="export-textarea"></textarea>
+    </div>
+  </div>
+
+  <script src="./utils.js"></script>
   <script src="./board.js"></script>
 </body>
 
