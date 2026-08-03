@@ -1,52 +1,89 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
   <meta charset="UTF-8">
-  <link rel="stylesheet" href="./hell.css">
+  <link rel="stylesheet" href="./hell.css?v=4">
+  <link rel="stylesheet" href="./dunkel.css?v=4">
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
   <style>
-    body { padding: 12px; }
-    h3 { margin-top: 0; margin-bottom: 8px; }
-    .form-group { margin-bottom: 12px; }
-    label { display: block; font-weight: bold; margin-bottom: 4px; }
-    input[type="text"] { width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: var(--radius); box-sizing: border-box; }
-    .color-select { width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: var(--radius); box-sizing: border-box; }
-    hr { border: 0; border-top: 1px solid var(--border); margin: 15px 0; }
-    button { width: 100%; margin-top: 5px; }
-    .success-msg { color: green; margin-top: 8px; text-align: center; display: none; }
+    body {
+      padding: 12px;
+    }
+
+    h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-sizing: border-box;
+    }
+
+    .color-select {
+      width: 100%;
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-sizing: border-box;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid var(--border);
+      margin: 15px 0;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 5px;
+    }
+
+    .success-msg {
+      color: green;
+      margin-top: 8px;
+      text-align: center;
+      display: none;
+    }
   </style>
 </head>
+
 <body>
   <h3>Lieferanten & Labels</h3>
-  
-  <div class="form-group">
-    <label>Lieferant 1 Name (Anzeige im Dropdown)</label>
-    <input type="text" id="lief1-name" placeholder="z.B. Volmary">
-  </div>
-  <div class="form-group">
-    <label>Lieferant 1 Trello-Label</label>
-    <select id="lief1-labelId" class="color-select">
-      <option value="">- Lade Labels... -</option>
-    </select>
-  </div>
+
+  <div id="lieferanten-container"></div>
+  <button id="add-lief-btn"
+    style="margin-bottom: 15px; background: var(--bg-hover); color: var(--text-dark); border: 1px dashed var(--border);">+
+    Weiteren Lieferanten hinzufügen</button>
+
   <hr>
-
-  <div class="form-group">
-    <label>Lieferant 2 Name (Anzeige im Dropdown)</label>
-    <input type="text" id="lief2-name" placeholder="z.B. Kientzler">
-  </div>
-  <div class="form-group">
-    <label>Lieferant 2 Trello-Label</label>
-    <select id="lief2-labelId" class="color-select">
-      <option value="">- Lade Labels... -</option>
+  <h3>Spezial-Labels</h3>
+  <div class="form-group" style="margin-bottom: 15px; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius);">
+    <label>Alles auf der karte ist bestellt label</label>
+    <select id="alles-bestellt-label" class="color-select">
+      <option value="">- Kein Label ausgewählt -</option>
     </select>
   </div>
-
-
   <button id="save-btn">Speichern</button>
   <div id="success-msg" class="success-msg">Einstellungen gespeichert!</div>
 
   <script src="./config.js"></script>
+  <script src="./utils.js"></script>
   <script src="./settings.js"></script>
 </body>
+
 </html>

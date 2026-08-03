@@ -12,26 +12,22 @@ var editIndex = null;
 
 function getLieferantName(liefKey) {
   if (!liefKey) return 'Kein Lieferant';
-  if (lieferantenEinstellungen && lieferantenEinstellungen[liefKey]) {
-    return lieferantenEinstellungen[liefKey].name;
-  }
+  var found = lieferantenEinstellungen.find(l => l.id === liefKey);
+  if (found) return found.name;
   return liefKey;
 }
 
 function speichernUndNeuZeichnen() {
   return t.set('board', 'shared', 'katalog', katalog)
     .then(zeichnen)
-    .catch(function(err) {
-      console.error('Fehler beim Speichern:', err);
-      alert('Speichern fehlgeschlagen!');
-    });
+    .catch(handleError);
 }
 
 function zeichnen() {
   var el = document.getElementById('liste');
 
   if (!katalog.length) {
-    el.innerHTML = '<li class="empty-state">Noch keine Einträge.</li>';
+    el.innerHTML = '<tr><td colspan="4" class="empty-state">Noch keine Einträge.</td></tr>';
     t.sizeTo(document.body);
     return;
   }
@@ -40,25 +36,16 @@ function zeichnen() {
     var eName = typeof eintrag === 'string' ? eintrag : eintrag.name;
     var ePreis = (typeof eintrag === 'object' && eintrag.preis) ? formatEuro(eintrag.preis) : '';
     var eLief = (typeof eintrag === 'object' && eintrag.lieferant) ? getLieferantName(eintrag.lieferant) : '';
-    
-    var infoHtml = '';
-    if (ePreis || eLief) {
-      infoHtml = `<div class="katalog-info">
-                   ${eLief ? `<span>🚚 ${escapeHtml(eLief)}</span>` : ''}
-                   ${ePreis ? `<span>💰 ${escapeHtml(ePreis)}</span>` : ''}
-                  </div>`;
-    }
 
-    return `<li>
-      <div class="katalog-name-container">
-        <span>${escapeHtml(eName)}</span>
-        ${infoHtml}
-      </div>
-      <div class="katalog-actions">
-        <span class="bearbeiten" data-i="${i}" title="Bearbeiten">✏️</span>
-        <span class="loeschen" data-i="${i}" title="Löschen">✕</span>
-      </div>
-    </li>`;
+    return `<tr>
+      <td><strong>${escapeHtml(eName)}</strong></td>
+      <td>${escapeHtml(eLief)}</td>
+      <td class="zahl">${escapeHtml(ePreis)}</td>
+      <td class="katalog-actions">
+        <span class="bearbeiten" data-i="${i}" title="Bearbeiten">Bearbeiten</span>
+        <span class="loeschen" data-i="${i}" title="Löschen">Löschen</span>
+      </td>
+    </tr>`;
   }).join('');
 
   el.querySelectorAll('.loeschen').forEach(function (btn) {
@@ -75,16 +62,16 @@ function zeichnen() {
       var name = typeof item === 'string' ? item : item.name;
       var preis = (typeof item === 'object' && item.preis) ? item.preis : '';
       var lief = (typeof item === 'object' && item.lieferant) ? item.lieferant : '';
-      
+
       document.getElementById('neuer-eintrag').value = name;
       document.getElementById('neuer-preis').value = preis;
       document.getElementById('neuer-lieferant').value = lief;
-      
+
       var btnAdd = document.getElementById('hinzufuegen');
       btnAdd.textContent = 'Speichern';
       btnAdd.style.backgroundColor = 'var(--trello-blue)';
       btnAdd.style.color = 'white';
-      
+
       document.getElementById('neuer-eintrag').focus();
     });
   });
@@ -104,7 +91,7 @@ function hinzufuegen() {
   var preisFeld = document.getElementById('neuer-preis');
   var liefFeld = document.getElementById('neuer-lieferant');
   var btnAdd = document.getElementById('hinzufuegen');
-  
+
   var wert = feld.value.trim();
   var preis = preisFeld.value.trim();
   var lief = liefFeld.value;
@@ -113,18 +100,20 @@ function hinzufuegen() {
     showError(feld);
     return;
   }
-  
+
   if (preis !== '') {
-    var pVal = parseFloat(preis.replace(',', '.'));
+    preis = preis.replace(',', '.');
+    var pVal = parseFloat(preis);
     if (isNaN(pVal) || pVal < 0) {
       showError(preisFeld);
       return;
     }
   }
-  
+
   // Check if name already exists (and is not the one we are editing)
-  var exists = katalog.findIndex(function(k) {
-    return (typeof k === 'string' ? k : k.name) === wert;
+  var exists = katalog.findIndex(function (k) {
+    var kName = typeof k === 'string' ? k : k.name;
+    return kName.trim().toLowerCase() === wert.toLowerCase();
   });
 
   if (exists !== -1 && exists !== editIndex) {
@@ -132,7 +121,7 @@ function hinzufuegen() {
     feld.focus();
     return;
   }
-  
+
   if (editIndex !== null) {
     katalog[editIndex] = { name: wert, preis: preis, lieferant: lief };
     editIndex = null;
@@ -142,13 +131,13 @@ function hinzufuegen() {
   } else {
     katalog.push({ name: wert, preis: preis, lieferant: lief });
   }
-  
-  katalog.sort(function (a, b) { 
+
+  katalog.sort(function (a, b) {
     var nameA = typeof a === 'string' ? a : a.name;
     var nameB = typeof b === 'string' ? b : b.name;
-    return nameA.localeCompare(nameB, 'de'); 
+    return nameA.localeCompare(nameB, 'de');
   });
-  
+
   feld.value = '';
   preisFeld.value = '';
   liefFeld.value = '';
@@ -157,8 +146,8 @@ function hinzufuegen() {
 }
 
 document.getElementById('hinzufuegen').addEventListener('click', hinzufuegen);
-['neuer-eintrag', 'neuer-preis', 'neuer-lieferant'].forEach(function(id) {
-  document.getElementById(id).addEventListener('keydown', function(e) {
+['neuer-eintrag', 'neuer-preis', 'neuer-lieferant'].forEach(function (id) {
+  document.getElementById(id).addEventListener('keydown', function (e) {
     if (e.key === 'Enter') hinzufuegen();
   });
 });
@@ -169,19 +158,28 @@ t.render(function () {
     t.get('board', 'shared', 'lieferanten')
   ]).then(function (res) {
     var gespeichert = res[0];
-    lieferantenEinstellungen = res[1];
+    var rawLief = res[1];
+
+    lieferantenEinstellungen = [];
+    if (rawLief && typeof rawLief === 'object' && !Array.isArray(rawLief)) {
+      if (rawLief.lief1 && rawLief.lief1.name) lieferantenEinstellungen.push({ id: 'lief1', name: rawLief.lief1.name });
+      if (rawLief.lief2 && rawLief.lief2.name) lieferantenEinstellungen.push({ id: 'lief2', name: rawLief.lief2.name });
+    } else if (Array.isArray(rawLief)) {
+      lieferantenEinstellungen = rawLief;
+    }
 
     // Populate Lieferanten Dropdown
     var select = document.getElementById('neuer-lieferant');
     var html = '<option value="">- Kein Lieferant -</option>';
-    if (lieferantenEinstellungen) {
-      if (lieferantenEinstellungen.lief1 && lieferantenEinstellungen.lief1.name) html += '<option value="lief1">' + escapeHtml(lieferantenEinstellungen.lief1.name) + '</option>';
-      if (lieferantenEinstellungen.lief2 && lieferantenEinstellungen.lief2.name) html += '<option value="lief2">' + escapeHtml(lieferantenEinstellungen.lief2.name) + '</option>';
-    }
+    lieferantenEinstellungen.forEach(function (lief) {
+      if (lief.name) {
+        html += '<option value="' + escapeHtml(lief.id) + '">' + escapeHtml(lief.name) + '</option>';
+      }
+    });
     select.innerHTML = html;
 
     // Migrate string array to object array if needed
-    katalog = gespeichert.map(function(item) {
+    katalog = gespeichert.map(function (item) {
       if (typeof item === 'string') {
         return { name: item, preis: '', lieferant: '' };
       }

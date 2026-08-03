@@ -1,10 +1,16 @@
 [data-theme="dark"] {
     --trello-blue: #579DFF;
     --trello-blue-hover: #85B8FF;
-    --text-dark: #B6C2CF;
-    --text-light: #8C9BAB;
-    --border: rgba(166, 197, 226, 0.16);
-    --bg-subtle: rgba(166, 197, 226, 0.04);
-    --bg-hover: rgba(166, 197, 226, 0.08);
+    --text-dark: #FFFFFF;
+    --text-light: #B6C2CF;
+    --border: #A6C5E229;
+    --bg-subtle: #2C333A;
+    --bg-hover: #38414A;
     --bg-main: #22272B;
+    color-scheme: dark;
+}
+
+[data-theme="dark"] select option {
+    background-color: var(--bg-main);
+    color: var(--text-dark);
 }

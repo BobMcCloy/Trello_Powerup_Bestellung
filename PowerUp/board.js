@@ -13,9 +13,8 @@ var letzteManagerItems = [];
 
 function getLieferantName(liefKey) {
   if (!liefKey) return '';
-  if (lieferantenEinstellungen && lieferantenEinstellungen[liefKey]) {
-    return lieferantenEinstellungen[liefKey].name;
-  }
+  var found = lieferantenEinstellungen.find(l => l.id === liefKey);
+  if (found) return found.name;
   return liefKey;
 }
 
@@ -33,6 +32,7 @@ function speichereFilterZustand() {
       lieferant: document.getElementById('filter-lieferant').value,
       optGroupCard: document.getElementById('opt-group-card').checked,
       optGroupParent: document.getElementById('opt-group-parent').checked,
+      optGroupArticle: document.getElementById('opt-group-article').checked,
       viewMode: viewMode
     };
     sessionStorage.setItem('blumenladen_filter_zustand', JSON.stringify(zustand));
@@ -57,6 +57,7 @@ function stelleFilterZustandWiederHer() {
         if (z.suche !== undefined) document.getElementById('filter-suche').value = z.suche;
         if (z.optGroupCard !== undefined) document.getElementById('opt-group-card').checked = z.optGroupCard;
         if (z.optGroupParent !== undefined) document.getElementById('opt-group-parent').checked = z.optGroupParent;
+        if (z.optGroupArticle !== undefined) document.getElementById('opt-group-article').checked = z.optGroupArticle;
 
         if (z.viewMode) {
           viewMode = z.viewMode;
@@ -80,9 +81,20 @@ function stelleFilterZustandWiederHer() {
 // Status-Update Logik via Iframe-API
 // ==========================================
 
+var inFlightRequests = new Set();
+
 window.updateBestellStatus = function (btn, cardId, mainId, subId, neuerStatus) {
+  if (inFlightRequests.has(cardId)) {
+    return; // Block concurrent requests for the same card
+  }
+
+  inFlightRequests.add(cardId);
+  var alterText = btn.innerHTML;
   btn.innerHTML = '⏳...';
-  btn.disabled = true;
+  
+  // Disable all action buttons for this card
+  var cardButtons = document.querySelectorAll(`button[data-card-id="${cardId}"]`);
+  cardButtons.forEach(b => b.disabled = true);
 
   t.get(cardId, 'shared', 'produkte', []).then(function (produkte) {
     var mainIdx = produkte.findIndex(p => p.id === mainId);
@@ -108,15 +120,97 @@ window.updateBestellStatus = function (btn, cardId, mainId, subId, neuerStatus) 
       }
     }
     wendeFilterAn();
-    syncCardLabels(t, cardId, produkte, lieferantenEinstellungen);
+    syncCardLabels(t, cardId, produkte);
   }).catch(function (err) {
     console.error('Fehler beim Speichern:', err);
-    var alterText = btn.innerHTML;
     btn.innerHTML = 'Fehler';
     setTimeout(function() {
       btn.innerHTML = alterText;
       btn.disabled = false;
     }, 3000);
+  }).finally(function() {
+    inFlightRequests.delete(cardId);
+    var cardButtons = document.querySelectorAll(`button[data-card-id="${cardId}"]`);
+    cardButtons.forEach(b => {
+      // Only re-enable if it's not the clicked button (which might be handled differently, though here we just re-enable all)
+      b.disabled = false;
+      if (b === btn && b.innerHTML === '⏳...') {
+        b.innerHTML = alterText;
+      }
+    });
+  });
+};
+
+window.updateMehrereBestellStatus = function (btn, sourceJson, neuerStatus) {
+  var sources;
+  try {
+    sources = JSON.parse(decodeURIComponent(sourceJson));
+  } catch(e) {
+    console.error("Fehler beim Parsen der Quellen:", e);
+    return;
+  }
+
+  if (sources.length === 0) return;
+
+  var alterText = btn.innerHTML;
+  btn.innerHTML = '⏳...';
+  btn.disabled = true;
+
+  var byCard = {};
+  sources.forEach(function(src) {
+    if (!byCard[src.cardId]) byCard[src.cardId] = [];
+    byCard[src.cardId].push(src);
+  });
+
+  var cardIds = Object.keys(byCard);
+  var promises = cardIds.map(function(cardId) {
+    if (inFlightRequests.has(cardId)) {
+      return Promise.resolve();
+    }
+    inFlightRequests.add(cardId);
+    
+    return t.get(cardId, 'shared', 'produkte', []).then(function(produkte) {
+      var changed = false;
+      byCard[cardId].forEach(function(src) {
+        var mainIdx = produkte.findIndex(p => p.id === src.mainId);
+        if (mainIdx !== -1 && produkte[mainIdx].unterartikel) {
+          var subIdx = produkte[mainIdx].unterartikel.findIndex(s => s.id === src.subId);
+          if (subIdx !== -1) {
+            produkte[mainIdx].unterartikel[subIdx].status = neuerStatus;
+            changed = true;
+          }
+        }
+      });
+      if (changed) {
+        return t.set(cardId, 'shared', 'produkte', produkte).then(function() {
+          return produkte;
+        });
+      }
+      return null;
+    }).then(function(produkte) {
+      if (produkte) {
+        var card = alleKarten.find(c => c.id === cardId);
+        if (card) {
+          if (!card.pluginData) card.pluginData = [];
+          var pd = card.pluginData.find(p => p.idPlugin === POWERUP_ID);
+          var wert = { produkte: produkte };
+          if (pd) {
+            pd.value = JSON.stringify(wert);
+          } else {
+            card.pluginData.push({ idPlugin: POWERUP_ID, value: JSON.stringify(wert) });
+          }
+        }
+        syncCardLabels(t, cardId, produkte);
+      }
+    }).catch(function(err) {
+      console.error('Fehler bei Karte ' + cardId + ':', err);
+    }).finally(function() {
+      inFlightRequests.delete(cardId);
+    });
+  });
+
+  Promise.all(promises).then(function() {
+    wendeFilterAn();
   });
 };
 
@@ -131,24 +225,24 @@ t.get('board', 'shared', 'katalog', STANDARD_KATALOG).then(function (gespeichert
 });
 
 t.get('board', 'shared', 'lieferanten').then(function(data) {
-  lieferantenEinstellungen = data;
-  var select = document.getElementById('filter-lieferant');
-  if (data) {
-    if (data.lief1 && data.lief1.name) {
-      var opt1 = document.createElement('option');
-      opt1.value = 'lief1';
-      opt1.textContent = data.lief1.name;
-      select.appendChild(opt1);
-    }
-    if (data.lief2 && data.lief2.name) {
-      var opt2 = document.createElement('option');
-      opt2.value = 'lief2';
-      opt2.textContent = data.lief2.name;
-      select.appendChild(opt2);
-    }
+  var rawLief = data;
+  lieferantenEinstellungen = [];
+  if (rawLief && typeof rawLief === 'object' && !Array.isArray(rawLief)) {
+    if (rawLief.lief1 && rawLief.lief1.name) lieferantenEinstellungen.push({ id: 'lief1', name: rawLief.lief1.name });
+    if (rawLief.lief2 && rawLief.lief2.name) lieferantenEinstellungen.push({ id: 'lief2', name: rawLief.lief2.name });
+  } else if (Array.isArray(rawLief)) {
+    lieferantenEinstellungen = rawLief;
   }
-  // Stelle Filter wieder her NACHDEM die Optionen da sind (wird in ladeAuswertung eh gemacht, 
-  // aber sicherheitshalber)
+
+  var select = document.getElementById('filter-lieferant');
+  lieferantenEinstellungen.forEach(function(lief) {
+    if (lief.name) {
+      var opt = document.createElement('option');
+      opt.value = escapeHtml(lief.id);
+      opt.textContent = lief.name;
+      select.appendChild(opt);
+    }
+  });
 });
 
 // utils.js enthält nun formatEuro und escapeHtml
@@ -290,7 +384,7 @@ function wendeFilterAn() {
               var sKey = sub.produkt + '␟' + parseFloat(sub.preis || 0).toFixed(2);
               var sEntry = getMapEntry(hEntry.subs, sKey, { name: sub.produkt, preis: parseFloat(sub.preis || 0), stk: 0, umsatz: 0 });
               sEntry.stk += parseFloat(sub.stk || 0);
-              sEntry.umsatz += parseFloat(sub.stk || 0) * parseFloat(sub.preis || 0);
+              sEntry.umsatz = 0; // Unterartikel zählen nicht zum Umsatz
             });
           } else {
             if (hauptMatch && statusFilter === 'all') {
@@ -302,7 +396,7 @@ function wendeFilterAn() {
               var sKey = '↳ ' + sub.produkt + '␟' + parseFloat(sub.preis || 0).toFixed(2);
               var sEntry = getMapEntry(cMap.items, sKey, { name: sub.produkt, preis: parseFloat(sub.preis || 0), stk: 0, umsatz: 0 });
               sEntry.stk += parseFloat(sub.stk || 0);
-              sEntry.umsatz += parseFloat(sub.stk || 0) * parseFloat(sub.preis || 0);
+              sEntry.umsatz = 0; // Unterartikel zählen nicht zum Umsatz
             });
           }
         }
@@ -311,7 +405,32 @@ function wendeFilterAn() {
   });
 
   if (viewMode === 'manager') {
-    zeichneManager(managerItems, groupByCard, groupByParent, gefilterteKarten.length);
+    var optGroupArticle = document.getElementById('opt-group-article').checked;
+    var finalManagerItems = managerItems;
+    
+    if (optGroupArticle) {
+      var groupMap = {};
+      managerItems.forEach(function(item) {
+        var key = item.sub.produkt.trim().toLowerCase() + '␟' + (item.lieferant || '').trim().toLowerCase() + '␟' + item.sub.status;
+        if (!groupMap[key]) {
+          groupMap[key] = {
+            card: { name: '(Mehrere)' },
+            mainName: '(Mehrere)',
+            lieferant: item.lieferant,
+            sub: { produkt: item.sub.produkt, status: item.sub.status, stk: 0 },
+            isGrouped: true,
+            sourceItems: []
+          };
+        }
+        groupMap[key].sub.stk += parseFloat(item.sub.stk) || 0;
+        groupMap[key].sourceItems.push({cardId: item.card.id, mainId: item.mainId, subId: item.sub.id});
+      });
+      finalManagerItems = Object.values(groupMap);
+      groupByCard = false;
+      groupByParent = false;
+    }
+
+    zeichneManager(finalManagerItems, groupByCard, groupByParent, gefilterteKarten.length);
   } else {
     zeichneAuswertung(summen, groupByCard, groupByParent, gefilterteKarten.length);
   }
@@ -346,7 +465,7 @@ function zeichneAuswertung(summen, groupByCard, groupByParent, anzahlKarten) {
     var cMap = summen[ck];
 
     if (groupByCard) {
-      html += `<tr class="group-header card-header"><td colspan="3">💳 ${escapeHtml(cMap.name)}</td></tr>`;
+      html += `<tr class="group-header card-header"><td colspan="3">${escapeHtml(cMap.name)}</td></tr>`;
     }
 
     var hKeys = Object.keys(cMap.items).sort((a, b) => cMap.items[a].name.localeCompare(cMap.items[b].name, 'de'));
@@ -358,7 +477,7 @@ function zeichneAuswertung(summen, groupByCard, groupByParent, anzahlKarten) {
       var hIndentClass = groupByCard ? 'pl-20 ' : '';
 
       html += `<tr class="auswertung-row">
-        <td class="${hIndentClass}${hNameClass}">${groupByParent ? '📦 ' : ''}${escapeHtml(hEntry.name)}</td>
+        <td class="${hIndentClass}${hNameClass}">${groupByParent ? '↳ ' : ''}${escapeHtml(hEntry.name)}</td>
         <td class="zahl">${hEntry.stk}</td>
         <td class="zahl"><span class="umsatz-pill">${formatEuro(hEntry.preis)}</span></td>
       </tr>`;
@@ -438,16 +557,16 @@ function zeichneManager(items, groupByCard, groupByParent, anzahlKarten) {
     if (groupByCard && currentCardId !== item.card.id) {
       currentCardId = item.card.id;
       currentMainName = null;
-      html += `<tr class="group-header card-header"><td colspan="${columns.length}">💳 ${escapeHtml(item.card.name)}</td></tr>`;
+      html += `<tr class="group-header card-header"><td colspan="${columns.length}">${escapeHtml(item.card.name)}</td></tr>`;
     }
 
     if (groupByParent && currentMainName !== item.mainName) {
       currentMainName = item.mainName;
       var headerdentClass = groupByCard ? 'pl-20 ' : '';
-      html += `<tr class="group-header main-header"><td colspan="${columns.length}" class="${headerdentClass}">📦 ${escapeHtml(item.mainName)}</td></tr>`;
+      html += `<tr class="group-header main-header"><td colspan="${columns.length}" class="${headerdentClass}">${escapeHtml(item.mainName)}</td></tr>`;
     }
 
-    var badgeClass = item.sub.status === 'zulauf' ? 'status-pill zulauf' : 'status-pill';
+    var badgeClass = item.sub.status === 'zulauf' ? 'status-pill zulauf' : 'status-pill bestellen';
     var statusText = item.sub.status === 'zulauf' ? 'Im Zulauf' : 'Zu bestellen';
 
     var subdentClass = (groupByCard && groupByParent) ? 'pl-40 ' : ((groupByCard || groupByParent) ? 'pl-20 ' : '');
@@ -461,11 +580,25 @@ function zeichneManager(items, groupByCard, groupByParent, anzahlKarten) {
     html += `<td class="${subdentClass}${parentClass}">${groupByParent ? '↳ ' : ''}${escapeHtml(item.sub.produkt)}</td>`;
     html += `<td class="zahl"><strong>${item.sub.stk}x</strong></td>`;
     html += `<td><span class="${badgeClass}">${statusText}</span></td>`;
-    html += `<td class="action-icons">
-      ${item.sub.status === 'bestellen' ? `<button class="action-btn btn-zulauf" onclick="updateBestellStatus(this, '${item.card.id}', '${item.mainId}', '${item.sub.id}', 'zulauf')">🚚 Zulauf</button>` : ''}
-      <button class="action-btn btn-vorhanden" onclick="updateBestellStatus(this, '${item.card.id}', '${item.mainId}', '${item.sub.id}', 'vorhanden')">✅ Vorhanden</button>
-      <button class="action-btn" onclick="zurKarteSpringen('${item.card.id}')">↗ Karte</button>
-    </td></tr>`;
+    html += `<td class="action-icons">`;
+    if (item.isGrouped) {
+      var sourceJson = encodeURIComponent(JSON.stringify(item.sourceItems));
+      if (item.sub.status === 'bestellen') {
+        html += `<button class="action-btn btn-zulauf" onclick="updateMehrereBestellStatus(this, '${sourceJson}', 'zulauf')">Zulauf</button>`;
+      }
+      if (item.sub.status === 'zulauf') {
+        html += `<button class="action-btn btn-vorhanden" onclick="updateMehrereBestellStatus(this, '${sourceJson}', 'vorhanden')">Vorhanden</button>`;
+      }
+    } else {
+      if (item.sub.status === 'bestellen') {
+        html += `<button class="action-btn btn-zulauf" onclick="updateBestellStatus(this, '${item.card.id}', '${item.mainId}', '${item.sub.id}', 'zulauf')">Zulauf</button>`;
+      }
+      if (item.sub.status === 'zulauf') {
+        html += `<button class="action-btn btn-vorhanden" onclick="updateBestellStatus(this, '${item.card.id}', '${item.mainId}', '${item.sub.id}', 'vorhanden')">Vorhanden</button>`;
+      }
+      html += `<button class="action-btn" onclick="zurKarteSpringen('${item.card.id}')">Karte öffnen</button>`;
+    }
+    html += `</td></tr>`;
   });
 
   html += '</tbody></table></div>';
@@ -494,6 +627,9 @@ function aktualisiereDruckKopf() {
 
 function csvFeld(wert) {
   wert = String(wert);
+  if (/^[=+\-@]/.test(wert)) {
+    wert = "'" + wert;
+  }
   if (/[;"\n]/.test(wert)) { return '"' + wert.replace(/"/g, '""') + '"'; }
   return wert;
 }
@@ -525,8 +661,8 @@ function exportCsv() {
 
   zeilen.push('Gesamt;;' + letzteAuswertung.gesamtStk + ';;' + letzteAuswertung.gesamtUmsatz.toFixed(2).replace('.', ','));
 
-  var csvehalt = zeilen.join('\r\n');
-  var blob = new Blob(['\uFEFF' + csvehalt], { type: 'text/csv;charset=utf-8;' });
+  var csvInhalt = zeilen.join('\r\n');
+  var blob = new Blob(['\uFEFF' + csvInhalt], { type: 'text/csv;charset=utf-8;' });
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   var datum = new Date().toISOString().slice(0, 10);
@@ -543,10 +679,16 @@ document.getElementById('filter-datum-von').addEventListener('input', wendeFilte
 document.getElementById('filter-datum-bis').addEventListener('input', wendeFilterAn);
 document.getElementById('filter-status').addEventListener('change', wendeFilterAn);
 document.getElementById('filter-lieferant').addEventListener('change', wendeFilterAn);
-document.getElementById('filter-suche').addEventListener('input', wendeFilterAn);
+
+var debounceTimer;
+document.getElementById('filter-suche').addEventListener('input', function() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(wendeFilterAn, 250);
+});
 document.getElementById('ohne-datum').addEventListener('change', wendeFilterAn);
 document.getElementById('opt-group-card').addEventListener('change', wendeFilterAn);
 document.getElementById('opt-group-parent').addEventListener('change', wendeFilterAn);
+document.getElementById('opt-group-article').addEventListener('change', wendeFilterAn);
 
 document.getElementById('autorisieren').addEventListener('click', function () {
   t.getRestApi().authorize({ scope: 'read,write' }).then(function () {

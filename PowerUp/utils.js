@@ -25,56 +25,99 @@ function escapeHtml(str) {
   return div.innerHTML; 
 }
 
-function syncCardLabels(t, cardId, produkte, lieferantenSettings) {
-  if (!lieferantenSettings) return Promise.resolve();
+window.handleError = function(err) {
+  console.error('Fehler:', err);
+  alert('Es ist ein Fehler aufgetreten: ' + err.message);
+};
 
-  var hasLief1 = false;
-  var hasLief2 = false;
+function syncCardLabels(t, cardId, produkte) {
+  return Promise.all([
+    t.get('board', 'shared', 'lieferanten'),
+    t.get('board', 'shared', 'statusLabels')
+  ]).then(function(res) {
+    var data = res[0];
+    var statusLabels = res[1] || {};
 
-  produkte.forEach(function(p) {
-    if (p.lieferant === 'lief1' && (!p.unterartikel || p.unterartikel.length === 0)) hasLief1 = true;
-    if (p.lieferant === 'lief2' && (!p.unterartikel || p.unterartikel.length === 0)) hasLief2 = true;
+    var lieferanten = [];
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      // Legacy Migration
+      if (data.lief1 && data.lief1.labelId) lieferanten.push({ id: 'lief1', labelId: data.lief1.labelId });
+      if (data.lief2 && data.lief2.labelId) lieferanten.push({ id: 'lief2', labelId: data.lief2.labelId });
+    } else if (Array.isArray(data)) {
+      lieferanten = data;
+    }
     
-    (p.unterartikel || []).forEach(function(sub) {
-      if (sub.status === 'bestellen' || sub.status === 'zulauf') {
-        var effLief = sub.lieferant || p.lieferant;
-        if (effLief === 'lief1') hasLief1 = true;
-        if (effLief === 'lief2') hasLief2 = true;
-      }
+
+    var activeLieferanten = new Set();
+    var hasBestellen = false;
+    var hasZulauf = false;
+
+    produkte.forEach(function(p) {
+      // Nur Unterartikel, die auf 'bestellen' oder 'zulauf' stehen, aktivieren das Lieferanten-Label
+      (p.unterartikel || []).forEach(function(sub) {
+        if (sub.status === 'bestellen') hasBestellen = true;
+        if (sub.status === 'zulauf') hasZulauf = true;
+
+        if (sub.status === 'bestellen' || sub.status === 'zulauf') {
+          activeLieferanten.add(sub.lieferant || p.lieferant);
+        }
+      });
     });
-  });
 
-  return t.getRestApi().getToken().then(function(token) {
-    if (!token) return Promise.resolve(); // Keine Erlaubnis oder nicht autorisiert
-    
-    var appKey = typeof CONFIG !== 'undefined' ? CONFIG.TRELLO_APP_KEY : (typeof APP_KEY !== 'undefined' ? APP_KEY : '');
-    
-    return fetch('https://api.trello.com/1/cards/' + cardId + '?key=' + appKey + '&token=' + token)
-    .then(function(res) {
-      if (!res.ok) throw new Error('API Request failed');
-      return res.json();
-    })
-    .then(function(card) {
-       var activeLabelIds = card.idLabels || [];
+    var shouldHaveAllesBestellt = (!hasBestellen && hasZulauf);
+    return t.getRestApi().getToken().then(function(token) {
+      if (!token) return Promise.resolve();
+      
+      var appKey = typeof CONFIG !== 'undefined' ? CONFIG.TRELLO_APP_KEY : (typeof APP_KEY !== 'undefined' ? APP_KEY : '');
+      
+      return fetch('https://api.trello.com/1/cards/' + cardId + '?fields=idLabels&key=' + appKey + '&token=' + token)
+      .then(function(res) {
+        if (!res.ok) throw new Error('API Request failed (card labels)');
+        return res.json();
+      })
+      .then(function(cardData) {
+         var activeLabelIds = cardData.idLabels || [];
+         var desiredLabelIds = activeLabelIds.slice();
 
-       var applyLabelLogic = function(liefKey, shouldHave) {
-          var labelId = lieferantenSettings[liefKey] ? lieferantenSettings[liefKey].labelId : null;
-          if (!labelId) return Promise.resolve();
+         lieferanten.forEach(function(lief) {
+            var labelId = lief.labelId;
+            if (!labelId) return;
 
-          var hasLabel = activeLabelIds.includes(labelId);
-          if (shouldHave && !hasLabel) {
-             return fetch('https://api.trello.com/1/cards/' + cardId + '/idLabels?value=' + labelId + '&key=' + appKey + '&token=' + token, { method: 'POST' });
-          } else if (!shouldHave && hasLabel) {
-             return fetch('https://api.trello.com/1/cards/' + cardId + '/idLabels/' + labelId + '?key=' + appKey + '&token=' + token, { method: 'DELETE' });
-          }
-          return Promise.resolve();
-       };
+            var shouldHave = activeLieferanten.has(lief.id);
+            var index = desiredLabelIds.indexOf(labelId);
+            
+            if (shouldHave && index === -1) {
+               desiredLabelIds.push(labelId);
+            } else if (!shouldHave && index !== -1) {
+               desiredLabelIds.splice(index, 1);
+            }
+         });
 
-       return applyLabelLogic('lief1', hasLief1).then(function() {
-         return applyLabelLogic('lief2', hasLief2);
-       });
-    }).catch(function(err) {
-      console.error('Fehler beim Synchronisieren der Labels:', err);
+         if (statusLabels.allesBestellt) {
+           var labelId = statusLabels.allesBestellt;
+           var index = desiredLabelIds.indexOf(labelId);
+           if (shouldHaveAllesBestellt && index === -1) {
+             desiredLabelIds.push(labelId);
+           } else if (!shouldHaveAllesBestellt && index !== -1) {
+             desiredLabelIds.splice(index, 1);
+           }
+         }
+
+         var changed = desiredLabelIds.length !== activeLabelIds.length || !desiredLabelIds.every(function(id) {
+           return activeLabelIds.includes(id);
+         });
+
+         if (changed) {
+            return fetch('https://api.trello.com/1/cards/' + cardId + '?key=' + appKey + '&token=' + token, {
+               method: 'PUT',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ idLabels: desiredLabelIds.join(',') })
+            });
+         }
+         return Promise.resolve();
+      }).catch(function(err) {
+        console.error('Fehler beim Synchronisieren der Labels:', err);
+      });
     });
   });
 }

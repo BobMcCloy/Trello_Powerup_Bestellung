@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
   <meta charset="UTF-8">
   <title>Katalog verwalten</title>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
-  <link rel="stylesheet" href="./hell.css?v=2">
-  <link rel="stylesheet" href="./dunkel.css?v=2">
+  <link rel="stylesheet" href="./hell.css?v=4">
+  <link rel="stylesheet" href="./dunkel.css?v=4">
   <style>
     .katalog-liste {
       list-style: none;
@@ -14,6 +15,7 @@
       max-height: 320px;
       overflow-y: auto;
     }
+
     .katalog-liste li {
       display: flex;
       align-items: center;
@@ -21,21 +23,52 @@
       padding: 8px 10px;
       border-bottom: 1px solid var(--border);
     }
-    .katalog-liste li:last-child { border-bottom: none; }
-    .katalog-liste li:hover { background: var(--bg-hover); }
+
+    .katalog-liste li:last-child {
+      border-bottom: none;
+    }
+
+    .katalog-liste li:hover {
+      background: var(--bg-hover);
+    }
+
     .neue-zeile {
       display: flex;
       gap: 10px;
       margin-bottom: 14px;
     }
-    .neue-zeile input[type="text"] { flex-grow: 2; }
-    .neue-zeile input[type="number"] { width: 80px; }
-    .neue-zeile select { width: 130px; }
-    .hinweis { color: var(--text-light); margin-bottom: 10px; }
-    .katalog-info { color: var(--text-light); display: flex; gap: 8px; margin-top: 4px; }
-    .katalog-name-container { display: flex; flex-direction: column; }
+
+    .neue-zeile input[type="text"] {
+      flex-grow: 2;
+    }
+
+    .neue-zeile input[type="number"] {
+      width: 80px;
+    }
+
+    .neue-zeile select {
+      width: 130px;
+    }
+
+    .hinweis {
+      color: var(--text-light);
+      margin-bottom: 10px;
+    }
+
+    .katalog-info {
+      color: var(--text-light);
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .katalog-name-container {
+      display: flex;
+      flex-direction: column;
+    }
   </style>
 </head>
+
 <body class="auswertung">
 
   <p class="hinweis">
@@ -53,11 +86,22 @@
   </div>
 
   <div class="tabellen-rahmen">
-    <ul class="katalog-liste" id="liste"></ul>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Std. Lieferant</th>
+          <th class="zahl">Std. Preis</th>
+          <th style="width: 120px;"></th>
+        </tr>
+      </thead>
+      <tbody id="liste"></tbody>
+    </table>
   </div>
 
   <script src="./config.js"></script>
   <script src="./utils.js"></script>
   <script src="./katalog.js"></script>
 </body>
+
 </html>

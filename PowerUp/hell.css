@@ -1,25 +1,29 @@
 :root {
-    --trello-blue: #0C66E4;
-    --trello-blue-hover: #0052CC;
-    --text-dark: #172B4D;
-    --text-light: #44546F;
-    --border: rgba(9, 30, 66, 0.14);
-    --bg-subtle: rgba(9, 30, 66, 0.06);
-    --bg-hover: rgba(9, 30, 66, 0.08);
-    --bg-main: #ffffff;
-    --radius: 3px;
-    --radius-large: 8px;
+  --trello-blue: #0C66E4;
+  --trello-blue-hover: #0052CC;
+  --text-dark: #172B4D;
+  --text-light: #44546F;
+  --border: #091E4224;
+  --bg-subtle: #F1F2F4;
+  --bg-hover: #DCDFE4;
+  --bg-main: #ffffff;
+  --radius: 3px;
+  --radius-large: 8px;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    margin: 0;
-    background: var(--bg-main);
-    color: var(--text-dark);
-    transition: background 0.2s, color 0.2s;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Ubuntu, "Droid Sans", "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  margin: 0;
+  background: var(--bg-main);
+  color: var(--text-dark);
+  transition: background 0.2s, color 0.2s;
 }
 
-body.auswertung { padding: 14px; }
+body.auswertung {
+  padding: 14px;
+}
 
 /* Neue Klassen für Refactoring */
 .empty-state {
@@ -27,80 +31,121 @@ body.auswertung { padding: 14px; }
   color: var(--text-light);
   font-style: italic;
 }
+
 .katalog-actions {
   display: flex;
   gap: 10px;
 }
+
 .katalog-actions .bearbeiten {
   cursor: pointer;
   color: var(--text-light);
 }
+
 .katalog-actions .loeschen {
   cursor: pointer;
 }
+
 /* Formular Layouts */
 .form-row {
   display: flex;
   gap: 10px;
 }
+
 .col-stk {
   width: 80px;
 }
+
 .col-flex {
   flex-grow: 1;
 }
+
 .form-select {
   width: 100%;
   padding: 6px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
+
 .mt-5 {
   margin-top: 5px;
 }
-.pl-20 { padding-left: 20px; }
-.pl-40 { padding-left: 40px; }
-.font-bold { font-weight: bold; }
-.text-light { color: var(--text-light); }
+
+.pl-20 {
+  padding-left: 20px;
+}
+
+.pl-40 {
+  padding-left: 40px;
+}
+
+.font-bold {
+  font-weight: bold;
+}
+
+.text-light {
+  color: var(--text-light);
+}
+
 /* Table Helper Classes */
-.w-30 { width: 30px; }
-.w-40 { width: 40px; }
+.w-30 {
+  width: 30px;
+}
+
+.w-40 {
+  width: 40px;
+}
+
 .lief-text {
   color: var(--trello-blue);
   text-transform: uppercase;
   font-weight: bold;
 }
+
 .sub-lief-text {
   color: var(--trello-blue);
   text-transform: uppercase;
   font-weight: bold;
   margin-left: 14px;
 }
+
 .no-pad-border {
   padding: 0;
   border: none;
 }
+
 .ws-nowrap {
   white-space: nowrap;
 }
+
 .action-icons {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
 }
+
 .icon-btn {
   cursor: pointer;
   color: var(--text-light);
 }
+
 .icon-btn-delete {
   cursor: pointer;
 }
+
 .btn-small {
   height: 28px;
   padding: 4px 10px;
 }
-.flex-end { justify-content: flex-end; }
-.flex-grow-2 { flex-grow: 2; }
+
+.flex-end {
+  justify-content: flex-end;
+}
+
+.flex-grow-2 {
+  flex-grow: 2;
+}
+
 .filter-group-options {
   margin-top: 10px;
   padding-top: 10px;
@@ -108,7 +153,10 @@ body.auswertung { padding: 14px; }
 }
 
 /* Text Export Overlay specific styles */
-.text-export-box { max-width: 600px; }
+.text-export-box {
+  max-width: 600px;
+}
+
 .overlay-header-export {
   display: flex;
   justify-content: space-between;
@@ -116,22 +164,30 @@ body.auswertung { padding: 14px; }
   border-bottom: 1px solid var(--border);
   padding-bottom: 10px;
 }
+
 .overlay-header-export h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 14px;
 }
+
 .overlay-header-export button {
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: 16px;
   cursor: pointer;
-  color: var(--text-light);
+  color: var(--text-dark);
 }
+
+.overlay-header-export button:hover {
+  background: none !important;
+}
+
 .overlay-desc {
   margin: 0;
   color: var(--text-light);
   font-size: 13px;
 }
+
 .export-textarea {
   width: 100%;
   height: 300px;
@@ -145,7 +201,9 @@ body.auswertung { padding: 14px; }
   resize: vertical;
 }
 
-body.karte { padding: 10px 14px; }
+body.karte {
+  padding: 10px 14px;
+}
 
 /* --- Menu HTML Specific Styles --- */
 .menu-liste {
@@ -153,221 +211,528 @@ body.karte { padding: 10px 14px; }
   flex-direction: column;
   gap: 8px;
 }
+
 .menu-liste button {
   width: 100%;
   text-align: left;
 }
-.p-10 { padding: 10px !important; }
+
+.p-10 {
+  padding: 10px !important;
+}
 
 /* --- Table HTML Specific Extracted Styles --- */
 .expand-btn {
-  background: none; border: none; color: var(--trello-blue);
-  font-weight: bold; cursor: pointer; width: 24px; height: 24px; border-radius: 4px;
+  background: none;
+  border: none;
+  color: var(--trello-blue);
+  font-weight: bold;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
 }
-.expand-btn:hover { background: var(--border); }
-.sub-container {
-  background: var(--bg-hover); padding: 12px; border-radius: var(--radius);
-  margin: 4px 0 12px 0; border: 1px solid var(--border);
-}
-.sub-table { margin-bottom: 12px; background: var(--bg-main); }
-.sub-table th, .sub-table td { padding: 6px 8px; }
 
-.radio-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.radio-label { display: flex; align-items: center; gap: 4px; cursor: pointer; color: var(--text-dark); }
-.radio-label input[type="radio"] { accent-color: var(--trello-blue); cursor: pointer; margin: 0; }
+.expand-btn:hover {
+  background: var(--border);
+}
+
+.sub-container {
+  background: var(--bg-hover);
+  padding: 12px;
+  border-radius: var(--radius);
+  margin: 4px 0 12px 0;
+  border: 1px solid var(--border);
+}
+
+.sub-table {
+  margin-bottom: 12px;
+  background: var(--bg-main);
+}
+
+.sub-table th,
+.sub-table td {
+  padding: 6px 8px;
+}
+
+.radio-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  color: var(--text-dark);
+}
+
+.radio-label input[type="radio"] {
+  accent-color: var(--trello-blue);
+  cursor: pointer;
+  margin: 0;
+}
 
 .overlay-bg {
-  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(9, 30, 66, 0.6); z-index: 100; align-items: center; justify-content: center; padding: 15px;
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(9, 30, 66, 0.6);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
 }
-[data-theme="dark"] .overlay-bg { background: rgba(9, 30, 66, 0.85); }
+
+[data-theme="dark"] .overlay-bg {
+  background: rgba(9, 30, 66, 0.85);
+}
 
 .overlay-box {
-  background: var(--bg-main); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 16px; width: 100%; max-width: 450px; box-shadow: 0 8px 16px -4px rgba(0,0,0,0.3);
-  display: flex; flex-direction: column; gap: 12px;
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large);
+  padding: 24px;
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 8px 12px rgba(9, 30, 66, 0.15), 0 0 1px rgba(9, 30, 66, 0.31);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--text-dark);
 }
+
 .overlay-header {
-  display: flex; justify-content: space-between; align-items: center;
-  font-weight: bold; color: var(--text-dark);
-  border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  color: var(--text-dark);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+  margin-bottom: 4px;
 }
+
 .close-btn {
-  background: none; border: none; cursor: pointer; color: var(--text-light); padding: 0; line-height: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-dark);
+  padding: 0;
+  line-height: 1;
 }
-.close-btn:hover { color: var(--text-dark); }
-.top-bar { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
-.loeschen { cursor: pointer; color: var(--text-light); font-weight: bold; }
-.loeschen:hover { color: #B04632; }
+
+.close-btn:hover {
+  color: var(--text-dark);
+  background: none !important;
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  align-items: center;
+}
+
+.loeschen {
+  cursor: pointer;
+  color: var(--text-light);
+  font-weight: bold;
+}
+
+.loeschen:hover {
+  color: #B04632;
+}
 
 /* --- Gemeinsame Elemente --- */
 button {
-    background: var(--trello-blue);
-    color: #fff;
-    border: none;
-    padding: 8px 14px;
-    border-radius: var(--radius);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
+  background: var(--trello-blue);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
 }
-button:hover { background: var(--trello-blue-hover); }
-button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+button:hover {
+  background: var(--trello-blue-hover);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 /* --- Tabellen Layout --- */
 .tabellen-rahmen {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-large);
-    overflow: hidden;
-    margin-top: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large);
+  overflow: hidden;
+  margin-top: 6px;
 }
-table { width: 100%; border-collapse: collapse; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
 thead th {
-    text-align: left;
-    font-weight: 600;
-    font-size: 12px;
-    color: var(--text-light);
-    background: transparent;
-    padding: 8px 10px;
-    border-bottom: 2px solid var(--border);
+  text-align: left;
+  font-weight: 600;
+  font-size: 10px;
+  color: var(--text-light);
+  background: transparent;
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--border);
 }
-th.zahl, td.zahl { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-tbody td { padding: 9px 10px; border-bottom: 1px solid #f0f1f2; color: var(--text-dark); }
-.sub-table td { padding: 8px 8px; border: 1px solid var(--border); }
-tbody tr:last-child td { border-bottom: none; }
-tbody tr:hover:not(.group-header) td { background: var(--bg-hover); }
+
+th.zahl,
+td.zahl {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+tbody td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dark);
+}
+
+.sub-table td {
+  padding: 8px 8px;
+  border: 1px solid var(--border);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover:not(.group-header) td {
+  background: var(--bg-hover);
+}
+
 tfoot td {
-    font-weight: 700;
-    background: var(--bg-subtle);
-    border-top: 1px solid var(--border);
-    border-bottom: none;
-    padding: 9px 10px;
+  font-weight: 700;
+  background: var(--bg-subtle);
+  border-top: 1px solid var(--border);
+  border-bottom: none;
+  padding: 9px 10px;
 }
 
 /* --- Pills & Status --- */
-.umsatz-pill, .preis-pill, .status-pill {
-    display: inline-block;
-    background: var(--bg-subtle);
-    color: var(--text-dark);
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
+.umsatz-pill,
+.preis-pill,
+.status-pill {
+  display: inline-block;
+  background: var(--bg-subtle);
+  color: var(--text-dark);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }
-.status-pill.zulauf { background: #FFD57B; color: #172B4D; }
+
+.status-pill.zulauf {
+  background: #FFD57B;
+  color: #172B4D;
+}
+
+.status-pill.bestellen {
+  background: #F87168;
+  color: #1D2125;
+}
+
 .leer {
-    color: var(--text-light);
-    padding: 18px 0;
-    text-align: center;
-    font-style: italic;
-    background: var(--bg-subtle);
-    border-radius: var(--radius);
+  color: var(--text-light);
+  padding: 18px 0;
+  text-align: center;
+  font-style: italic;
+  background: var(--bg-subtle);
+  border-radius: var(--radius);
 }
 
 /* --- Tabs & Gruppierungen --- */
-.tabs { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 2px solid var(--border); }
-.tab-btn { background: transparent; color: var(--text-light); border: none; border-bottom: 2px solid transparent; padding: 10px 16px; font-weight: 600; border-radius: 3px 3px 0 0; cursor: pointer; transition: color 0.2s, border-color 0.2s; margin-bottom: -2px; }
-.tab-btn.active { color: var(--trello-blue); border-bottom: 2px solid var(--trello-blue); }
-.tab-btn:hover:not(.active) { background: var(--bg-hover); color: var(--text-dark); }
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+  border-bottom: 2px solid var(--border);
+}
+
+.tab-btn {
+  background: transparent;
+  color: var(--text-light);
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 16px;
+  font-weight: 600;
+  border-radius: 3px 3px 0 0;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  margin-bottom: -2px;
+}
+
+.tab-btn.active {
+  color: var(--trello-blue);
+  border-bottom: 2px solid var(--trello-blue);
+}
+
+.tab-btn:hover:not(.active) {
+  background: var(--bg-hover);
+  color: var(--text-dark);
+}
 
 /* Optisch starke Hervorhebung der Hierarchien */
 .group-header.card-header td {
-    background: var(--bg-subtle);
-    color: var(--text-dark);
-    font-weight: 700;
-    padding: 10px;
-    border-bottom: 2px solid var(--border) !important;
-    border-top: 2px solid var(--border) !important;
+  background: var(--bg-subtle);
+  color: var(--text-dark);
+  font-weight: 700;
+  padding: 10px;
+  border-bottom: 2px solid var(--border) !important;
+  border-top: 2px solid var(--border) !important;
 }
+
 .group-header.main-header td {
-    background: transparent;
-    color: var(--text-dark);
-    font-size: 14px;
-    line-height: 1.5;
-    font-weight: 600;
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--border) !important;
+  background: transparent;
+  color: var(--text-dark);
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border) !important;
 }
 
 /* --- Manager Buttons --- */
-button.action-btn { padding: 4px 8px; font-weight: normal; }
-button.btn-zulauf { background: #FFD57B; color: #172B4D; border: none; }
-button.btn-zulauf:hover { background: #E6C06F; }
-button.btn-vorhanden { background: var(--bg-subtle); color: var(--text-dark); border: none; }
-button.btn-vorhanden:hover { background: var(--bg-hover); }
-button.btn-hinzufuegen {
-  background: var(--bg-subtle); color: var(--text-dark); border: none;
-  padding: 6px 12px; border-radius: 3px; cursor: pointer; font-weight: 600; width: 100%;
+button.action-btn {
+  padding: 4px 8px;
+  font-weight: normal;
+  font-size: 12px;
 }
-.btn-hinzufuegen:hover { background: var(--bg-hover); }
+
+button.btn-zulauf {
+  background: #FFD57B;
+  color: #172B4D;
+  border: none;
+}
+
+button.btn-zulauf:hover {
+  background: #E6C06F;
+}
+
+button.btn-vorhanden {
+  background: var(--bg-subtle);
+  color: var(--text-dark);
+  border: none;
+}
+
+button.btn-vorhanden:hover {
+  background: var(--bg-hover);
+}
+
+button.btn-hinzufuegen {
+  background: var(--trello-blue);
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 600;
+  width: 100%;
+}
+
+.btn-hinzufuegen:hover {
+  background: var(--trello-blue-hover);
+}
 
 /* --- Kopfzeile & Buttons (Auswertung) --- */
 .header-bereich {
-    display: flex;
-    align-items: center;
-    margin-bottom: 16px;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 12px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
 }
-.header-bereich img { max-height: 40px; margin-right: 12px; }
-.header-bereich h2 { margin: 0; color: var(--text-dark); font-weight: 600; font-size: 20px; }
-.knopf-reihe { display: flex; gap: 8px; margin-bottom: 10px; }
-.knopf-reihe button, #neuladen { background: var(--bg-subtle); color: var(--text-dark); border: none; font-weight: 500; }
-.knopf-reihe button:hover, #neuladen:hover { background: var(--bg-hover); }
+
+.header-bereich img {
+  max-height: 40px;
+  margin-right: 12px;
+}
+
+.header-bereich h2 {
+  margin: 0;
+  color: var(--text-dark);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.knopf-reihe {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.knopf-reihe button,
+#neuladen {
+  background: var(--bg-subtle);
+  color: var(--text-dark);
+  border: none;
+  font-weight: 500;
+}
+
+.knopf-reihe button:hover,
+#neuladen:hover {
+  background: var(--bg-hover);
+}
 
 /* --- Inputs & Eingabemaske --- */
-.filter-bar, .eingabemaske {
-    display: flex;
-    background: var(--bg-subtle);
-    padding: 12px 14px;
-    border-radius: var(--radius);
-    margin-bottom: 14px;
-    gap: 10px;
+.filter-bar,
+.eingabemaske {
+  display: flex;
+  background: var(--bg-subtle);
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+  gap: 10px;
 }
-.filter-bar { flex-direction: column; }
-.eingabemaske { align-items: flex-end; }
-.filter-row { display: flex; gap: 12px; flex-wrap: wrap; }
-.input-group { display: flex; flex-direction: column; flex-grow: 1; }
-.input-group label {
-    font-weight: 600;
-    font-size: 12px;
-    color: var(--text-light);
-    margin-bottom: 4px;
-}
-input[type="text"], input[type="number"], input[type="date"], select, .export-textarea {
-    padding: 6px 8px;
-    border: 2px solid var(--border);
-    border-radius: var(--radius);
-    box-sizing: border-box;
-    width: 100%;
-    background: transparent;
-    color: var(--text-dark);
-    font-size: 14px;
-    font-family: inherit;
-    transition: border-color 0.2s;
-}
-input:focus, select:focus, .export-textarea:focus { border-color: var(--trello-blue); outline: none; }
 
-.checkbox-label { display: flex; align-items: center; gap: 8px; color: var(--text-dark); cursor: pointer; padding: 4px 0; font-size: 14px; }
-.checkbox-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--trello-blue); cursor: pointer; margin: 0; }
+.filter-bar {
+  flex-direction: column;
+}
+
+.eingabemaske {
+  align-items: flex-end;
+}
+
+.filter-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.input-group label {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-light);
+  margin-bottom: 4px;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select,
+.export-textarea {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-sizing: border-box;
+  width: 100%;
+  background: transparent;
+  color: var(--text-dark);
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus,
+select:focus,
+.export-textarea:focus {
+  border-color: var(--trello-blue);
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--trello-blue);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-dark);
+  cursor: pointer;
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--trello-blue);
+  cursor: pointer;
+  margin: 0;
+}
 
 @keyframes blink-red {
-  0% { border-color: #B04632; box-shadow: 0 0 5px #B04632; }
-  100% { border-color: var(--border); box-shadow: none; }
+  0% {
+    border-color: #B04632;
+    box-shadow: 0 0 5px #B04632;
+  }
+
+  100% {
+    border-color: var(--border);
+    box-shadow: none;
+  }
 }
-.error-blink { animation: blink-red 0.5s ease-out; }
+
+.error-blink {
+  animation: blink-red 0.5s ease-out;
+}
 
 /* --- Druck --- */
-.status { color: var(--text-light); margin: 10px 0; }
-.fehler { color: #B04632; margin-top: 8px; }
-.druck-kopf { display: none; }
+.status {
+  color: var(--text-light);
+  margin: 10px 0;
+}
+
+.fehler {
+  color: #B04632;
+  margin-top: 8px;
+}
+
+.druck-kopf {
+  display: none;
+}
+
 @media print {
-    .no-print { display: none !important; }
-    body { padding: 0; background: #fff !important; color: #000 !important; }
-    .header-bereich { border-bottom: 2px solid var(--text-dark); }
-    .druck-kopf { display: block; color: var(--text-light); margin-bottom: 10px; }
-    .tabellen-rahmen { border: 1px solid #000; }
-    tbody tr:hover:not(.group-header) td { background: none; }
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    padding: 0;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .header-bereich {
+    border-bottom: 2px solid var(--text-dark);
+  }
+
+  .druck-kopf {
+    display: block;
+    color: var(--text-light);
+    margin-bottom: 10px;
+  }
+
+  .tabellen-rahmen {
+    border: 1px solid #000;
+  }
+
+  tbody tr:hover:not(.group-header) td {
+    background: none;
+  }
 }
