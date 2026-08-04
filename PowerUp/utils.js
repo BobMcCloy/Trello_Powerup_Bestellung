@@ -53,12 +53,12 @@ function syncCardLabels(t, cardId, produkte) {
     var hasZulauf = false;
 
     produkte.forEach(function(p) {
-      // Nur Unterartikel, die auf 'bestellen' oder 'zulauf' stehen, aktivieren das Lieferanten-Label
+      // Nur Unterartikel, die auf 'bestellen' stehen, aktivieren das Lieferanten-Label
       (p.unterartikel || []).forEach(function(sub) {
         if (sub.status === 'bestellen') hasBestellen = true;
         if (sub.status === 'zulauf') hasZulauf = true;
 
-        if (sub.status === 'bestellen' || sub.status === 'zulauf') {
+        if (sub.status === 'bestellen') {
           activeLieferanten.add(sub.lieferant || p.lieferant);
         }
       });

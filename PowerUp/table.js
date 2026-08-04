@@ -16,7 +16,8 @@ function neueId() {
 
 Promise.all([
   t.get('board', 'shared', 'lieferanten'),
-  t.get('board', 'shared', 'katalog', STANDARD_KATALOG)
+  t.get('board', 'shared', 'katalogProdukte', []),
+  t.get('board', 'shared', 'katalogMaterial', [])
 ]).then(function (res) {
   var rawLief = res[0];
   lieferantenEinstellungen = [];
@@ -27,7 +28,8 @@ Promise.all([
     lieferantenEinstellungen = rawLief;
   }
 
-  var kat = res[1];
+  var katProd = res[1];
+  var katMat = res[2];
 
   var d1 = document.getElementById('lieferant');
   var d2 = document.getElementById('sub-lieferant');
@@ -42,17 +44,43 @@ Promise.all([
   if (d1) d1.innerHTML = html;
   if (d2) d2.innerHTML = html;
 
-  katalogObjekte = kat.map(function (item) {
-    if (typeof item === 'string') return { name: item, preis: '', lieferant: '' };
-    return item;
-  });
+  // Render Produkte Datalist
+  var prodDatalist = document.getElementById('katalog-produkte-liste');
+  if (prodDatalist) {
+    prodDatalist.innerHTML = katProd.map(function (e) {
+      var liefName = e.lieferant ? getLieferantName(e.lieferant) : '';
+      var text = e.name + (liefName ? ' (' + liefName + ')' : '');
+      return '<option value="' + escapeHtml(e.name) + '">' + escapeHtml(text) + '</option>';
+    }).join('');
+  }
 
-  var datalist = document.getElementById('katalog-liste');
-  datalist.innerHTML = katalogObjekte.map(function (e) {
-    var liefName = e.lieferant ? getLieferantName(e.lieferant) : '';
-    var text = e.name + (liefName ? ' (' + liefName + ')' : '');
-    return '<option value="' + escapeHtml(e.name) + '">' + escapeHtml(text) + '</option>';
-  }).join('');
+  // Render Material Datalist
+  var matDatalist = document.getElementById('katalog-material-liste');
+  if (matDatalist) {
+    matDatalist.innerHTML = katMat.map(function (e) {
+      var liefName = e.lieferant ? getLieferantName(e.lieferant) : '';
+      var text = e.name + (liefName ? ' (' + liefName + ')' : '');
+      return '<option value="' + escapeHtml(e.name) + '">' + escapeHtml(text) + '</option>';
+    }).join('');
+  }
+
+  // Render Quick Buttons
+  var quickBtnContainer = document.getElementById('quick-buttons-container');
+  if (quickBtnContainer) {
+    var quickBtns = katProd.filter(p => p.isQuickButton);
+    if (quickBtns.length > 0) {
+      quickBtnContainer.style.display = 'grid';
+      quickBtnContainer.innerHTML = quickBtns.map(function(qb) {
+        var p = (parseFloat(qb.preis) || 0).toFixed(2).replace('.', ',');
+        return `<button class="quick-btn" onclick="fillHaupt('${escapeHtml(qb.name)}', '${p}')" title="${escapeHtml(qb.name)}">${escapeHtml(qb.name)}</button>`;
+      }).join('');
+    } else {
+      quickBtnContainer.style.display = 'none';
+    }
+  }
+
+  // Combine them for the autofill function
+  katalogObjekte = katProd.concat(katMat);
 });
 
 function getLieferantName(liefKey) {
@@ -62,7 +90,11 @@ function getLieferantName(liefKey) {
   return liefKey;
 }
 
-// updateCardLabels wurde nach utils.js (syncCardLabels) verschoben
+window.fillHaupt = function(name, preis) {
+  document.getElementById('artikel').value = name;
+  document.getElementById('preis').value = preis;
+  document.getElementById('stk').focus();
+};
 
 window.openHauptOverlay = function () {
   document.body.style.minHeight = '300px';
@@ -71,9 +103,8 @@ window.openHauptOverlay = function () {
     document.getElementById('stk').value = '1';
     document.getElementById('artikel').value = '';
     document.getElementById('preis').value = '';
-    document.getElementById('lieferant').value = '';
   }
-  setTimeout(() => document.getElementById('stk').focus(), 50);
+  setTimeout(() => document.getElementById('artikel').focus(), 50);
   t.sizeTo(document.body);
 };
 
@@ -120,7 +151,6 @@ document.getElementById('speichern').addEventListener('click', function () {
   var stk = stkEl.value;
   var artikel = artEl.value.trim();
   var preis = preisEl.value;
-  var lieferant = document.getElementById('lieferant').value;
 
   if (!artikel) {
     showError(artEl);
@@ -148,12 +178,12 @@ document.getElementById('speichern').addEventListener('click', function () {
         exist.stk = stk;
         exist.produkt = artikel;
         exist.preis = preis;
-        exist.lieferant = lieferant;
+        exist.lieferant = '';
       }
     } else {
       var nId = neueId();
       letzterHauptartikelId = nId;
-      produkte.push({ id: nId, stk: stk, produkt: artikel, preis: preis, lieferant: lieferant, unterartikel: [] });
+      produkte.push({ id: nId, stk: stk, produkt: artikel, preis: preis, lieferant: '', unterartikel: [] });
     }
     syncCardLabels(t, t.getContext().card, produkte);
     return t.set('card', 'shared', 'produkte', produkte);
@@ -161,7 +191,6 @@ document.getElementById('speichern').addEventListener('click', function () {
     document.getElementById('stk').value = '1';
     document.getElementById('artikel').value = '';
     document.getElementById('preis').value = '';
-    document.getElementById('lieferant').value = '';
     closeOverlays();
     zeichnen();
   }).catch(handleError);
@@ -287,7 +316,6 @@ window.editHaupt = function(id) {
     document.getElementById('stk').value = p.stk || '1';
     document.getElementById('artikel').value = p.produkt || '';
     document.getElementById('preis').value = (p.preis || '').replace('.', ',');
-    document.getElementById('lieferant').value = p.lieferant || '';
 
     document.getElementById('speichern').textContent = 'Speichern';
     openHauptOverlay();
@@ -385,7 +413,12 @@ function zeichnen() {
 
           var subLiefHtml = sub.lieferant ? `<br><span class="sub-lief-text">${escapeHtml(getLieferantName(sub.lieferant))}</span>` : '';
 
-          html += `<tr>
+          var rowClass = '';
+          if (sub.status === 'bestellen') rowClass = 'row-bestellen';
+          else if (sub.status === 'zulauf') rowClass = 'row-zulauf';
+          else if (sub.status === 'vorhanden') rowClass = 'row-vorhanden';
+
+          html += `<tr class="${rowClass}">
              <td class="zahl w-40">${subStk}x</td>
              <td>↳ ${escapeHtml(sub.produkt)}${subLiefHtml}</td>
              <td class="zahl">${formatEuro(subPreis)}</td>

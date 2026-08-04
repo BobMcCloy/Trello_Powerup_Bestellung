@@ -7,6 +7,9 @@
     --bg-subtle: #2C333A;
     --bg-hover: #38414A;
     --bg-main: #22272B;
+    --bg-vorhanden: #143C2B;
+    --bg-zulauf: #4C3A13;
+    --bg-bestellen: #42201D;
     color-scheme: dark;
 }
 

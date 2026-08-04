@@ -91,7 +91,7 @@ window.updateBestellStatus = function (btn, cardId, mainId, subId, neuerStatus) 
   inFlightRequests.add(cardId);
   var alterText = btn.innerHTML;
   btn.innerHTML = '⏳...';
-  
+
   // Disable all action buttons for this card
   var cardButtons = document.querySelectorAll(`button[data-card-id="${cardId}"]`);
   cardButtons.forEach(b => b.disabled = true);
@@ -124,11 +124,11 @@ window.updateBestellStatus = function (btn, cardId, mainId, subId, neuerStatus) 
   }).catch(function (err) {
     console.error('Fehler beim Speichern:', err);
     btn.innerHTML = 'Fehler';
-    setTimeout(function() {
+    setTimeout(function () {
       btn.innerHTML = alterText;
       btn.disabled = false;
     }, 3000);
-  }).finally(function() {
+  }).finally(function () {
     inFlightRequests.delete(cardId);
     var cardButtons = document.querySelectorAll(`button[data-card-id="${cardId}"]`);
     cardButtons.forEach(b => {
@@ -145,7 +145,7 @@ window.updateMehrereBestellStatus = function (btn, sourceJson, neuerStatus) {
   var sources;
   try {
     sources = JSON.parse(decodeURIComponent(sourceJson));
-  } catch(e) {
+  } catch (e) {
     console.error("Fehler beim Parsen der Quellen:", e);
     return;
   }
@@ -157,21 +157,21 @@ window.updateMehrereBestellStatus = function (btn, sourceJson, neuerStatus) {
   btn.disabled = true;
 
   var byCard = {};
-  sources.forEach(function(src) {
+  sources.forEach(function (src) {
     if (!byCard[src.cardId]) byCard[src.cardId] = [];
     byCard[src.cardId].push(src);
   });
 
   var cardIds = Object.keys(byCard);
-  var promises = cardIds.map(function(cardId) {
+  var promises = cardIds.map(function (cardId) {
     if (inFlightRequests.has(cardId)) {
       return Promise.resolve();
     }
     inFlightRequests.add(cardId);
-    
-    return t.get(cardId, 'shared', 'produkte', []).then(function(produkte) {
+
+    return t.get(cardId, 'shared', 'produkte', []).then(function (produkte) {
       var changed = false;
-      byCard[cardId].forEach(function(src) {
+      byCard[cardId].forEach(function (src) {
         var mainIdx = produkte.findIndex(p => p.id === src.mainId);
         if (mainIdx !== -1 && produkte[mainIdx].unterartikel) {
           var subIdx = produkte[mainIdx].unterartikel.findIndex(s => s.id === src.subId);
@@ -182,12 +182,12 @@ window.updateMehrereBestellStatus = function (btn, sourceJson, neuerStatus) {
         }
       });
       if (changed) {
-        return t.set(cardId, 'shared', 'produkte', produkte).then(function() {
+        return t.set(cardId, 'shared', 'produkte', produkte).then(function () {
           return produkte;
         });
       }
       return null;
-    }).then(function(produkte) {
+    }).then(function (produkte) {
       if (produkte) {
         var card = alleKarten.find(c => c.id === cardId);
         if (card) {
@@ -202,14 +202,14 @@ window.updateMehrereBestellStatus = function (btn, sourceJson, neuerStatus) {
         }
         syncCardLabels(t, cardId, produkte);
       }
-    }).catch(function(err) {
+    }).catch(function (err) {
       console.error('Fehler bei Karte ' + cardId + ':', err);
-    }).finally(function() {
+    }).finally(function () {
       inFlightRequests.delete(cardId);
     });
   });
 
-  Promise.all(promises).then(function() {
+  Promise.all(promises).then(function () {
     wendeFilterAn();
   });
 };
@@ -224,7 +224,7 @@ t.get('board', 'shared', 'katalog', STANDARD_KATALOG).then(function (gespeichert
   });
 });
 
-t.get('board', 'shared', 'lieferanten').then(function(data) {
+t.get('board', 'shared', 'lieferanten').then(function (data) {
   var rawLief = data;
   lieferantenEinstellungen = [];
   if (rawLief && typeof rawLief === 'object' && !Array.isArray(rawLief)) {
@@ -235,7 +235,7 @@ t.get('board', 'shared', 'lieferanten').then(function(data) {
   }
 
   var select = document.getElementById('filter-lieferant');
-  lieferantenEinstellungen.forEach(function(lief) {
+  lieferantenEinstellungen.forEach(function (lief) {
     if (lief.name) {
       var opt = document.createElement('option');
       opt.value = escapeHtml(lief.id);
@@ -407,10 +407,10 @@ function wendeFilterAn() {
   if (viewMode === 'manager') {
     var optGroupArticle = document.getElementById('opt-group-article').checked;
     var finalManagerItems = managerItems;
-    
+
     if (optGroupArticle) {
       var groupMap = {};
-      managerItems.forEach(function(item) {
+      managerItems.forEach(function (item) {
         var key = item.sub.produkt.trim().toLowerCase() + '␟' + (item.lieferant || '').trim().toLowerCase() + '␟' + item.sub.status;
         if (!groupMap[key]) {
           groupMap[key] = {
@@ -423,7 +423,7 @@ function wendeFilterAn() {
           };
         }
         groupMap[key].sub.stk += parseFloat(item.sub.stk) || 0;
-        groupMap[key].sourceItems.push({cardId: item.card.id, mainId: item.mainId, subId: item.sub.id});
+        groupMap[key].sourceItems.push({ cardId: item.card.id, mainId: item.mainId, subId: item.sub.id });
       });
       finalManagerItems = Object.values(groupMap);
       groupByCard = false;
@@ -575,7 +575,7 @@ function zeichneManager(items, groupByCard, groupByParent, anzahlKarten) {
     html += `<tr>`;
     if (!groupByCard) html += `<td>${escapeHtml(item.card.name)}</td>`;
     if (!groupByParent) html += `<td>${escapeHtml(item.mainName)}</td>`;
-    
+
     html += `<td class="text-light">${escapeHtml(getLieferantName(item.lieferant))}</td>`;
     html += `<td class="${subdentClass}${parentClass}">${groupByParent ? '↳ ' : ''}${escapeHtml(item.sub.produkt)}</td>`;
     html += `<td class="zahl"><strong>${item.sub.stk}x</strong></td>`;
@@ -603,7 +603,7 @@ function zeichneManager(items, groupByCard, groupByParent, anzahlKarten) {
 
   html += '</tbody></table></div>';
   document.getElementById('tabelle').innerHTML = html;
-  
+
   letzteManagerItems = items;
   t.sizeTo(document.body);
 }
@@ -681,7 +681,7 @@ document.getElementById('filter-status').addEventListener('change', wendeFilterA
 document.getElementById('filter-lieferant').addEventListener('change', wendeFilterAn);
 
 var debounceTimer;
-document.getElementById('filter-suche').addEventListener('input', function() {
+document.getElementById('filter-suche').addEventListener('input', function () {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(wendeFilterAn, 250);
 });
@@ -705,45 +705,41 @@ function generateTextExport() {
     alert("Keine Bestell-Artikel zum Kopieren vorhanden.");
     return;
   }
-  
-  var groupByCard = document.getElementById('opt-group-card').checked;
-  var groupByParent = document.getElementById('opt-group-parent').checked;
-  
-  var text = "BESTELL-LISTE\n";
-  text += "========================================\n";
-  
-  var currentCardId = null;
-  var currentMainName = null;
-  
-  letzteManagerItems.forEach(function(item) {
-    if (groupByCard && currentCardId !== item.card.id) {
-      currentCardId = item.card.id;
-      currentMainName = null;
-      text += "\n[ " + item.card.name + " ]\n";
+
+  var groupedByLieferant = {};
+
+  letzteManagerItems.forEach(function (item) {
+    var lname = item.lieferant ? getLieferantName(item.lieferant) : "Unbekannt";
+    if (!groupedByLieferant[lname]) {
+      groupedByLieferant[lname] = [];
     }
-    
-    if (groupByParent && currentMainName !== item.mainName) {
-      currentMainName = item.mainName;
-      var hIndent = groupByCard ? "  " : "";
-      text += "\n" + hIndent + item.mainName + ":\n";
-    }
-    
-    var sIndent = "";
-    if (groupByCard && groupByParent) sIndent = "    ";
-    else if (groupByCard || groupByParent) sIndent = "  ";
-    
-    var prefix = groupByParent ? "- " : "";
-    var liefText = item.lieferant ? " (" + getLieferantName(item.lieferant) + ")" : "";
-    var artText = item.sub.produkt;
-    if (!groupByParent && !groupByCard) {
-      artText = item.card.name + " | " + item.mainName + " | " + item.sub.produkt;
-    } else if (!groupByParent) {
-      artText = item.mainName + " | " + item.sub.produkt;
-    }
-    
-    text += sIndent + prefix + item.sub.stk + "x " + artText + liefText + "\n";
+    groupedByLieferant[lname].push(item);
   });
-  
+
+  var text = "BESTELL-LISTE\n";
+  text += "========================================\n\n";
+
+  var lieferantenNamen = Object.keys(groupedByLieferant).sort();
+
+  lieferantenNamen.forEach(function (lname) {
+    text += lname + ":\n";
+    text += "    " + "Stk.:".padEnd(8, " ") + "Artikel:".padEnd(35, " ") + "Einzelpreis:\n";
+
+    groupedByLieferant[lname].forEach(function (item) {
+      var preisNum = parseFloat(item.sub.preis) || 0;
+      var preisStr = preisNum.toFixed(2).replace('.', ',') + " €";
+
+      var artText = item.sub.produkt;
+
+      var stkPad = (item.sub.stk + "x").padEnd(8, " ");
+      var artPad = artText.padEnd(35, " ");
+
+      text += "    - " + stkPad + artPad + preisStr + "\n";
+    });
+
+    text += "\n";
+  });
+
   document.getElementById('text-export-area').value = text;
   document.getElementById('overlay-text-export').style.display = 'flex';
 }

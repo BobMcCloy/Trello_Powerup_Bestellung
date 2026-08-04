@@ -3,12 +3,12 @@ var t = TrelloPowerUp.iframe({
   appKey: CONFIG.TRELLO_APP_KEY,
   appName: 'Blumenladen Produktliste'
 });
-var katalog = [];
+
+var katalogProdukte = [];
+var katalogMaterial = [];
 var lieferantenEinstellungen = null;
 var editIndex = null;
-
-// Bisherige unterartikel.csv-Einträge als Startwert, falls im Board
-// noch nichts gespeichert ist. (Nun in utils.js definiert)
+var activeTab = 'produkte'; // 'produkte' oder 'material'
 
 function getLieferantName(liefKey) {
   if (!liefKey) return 'Kein Lieferant';
@@ -17,148 +17,236 @@ function getLieferantName(liefKey) {
   return liefKey;
 }
 
+function getActiveArray() {
+  return activeTab === 'produkte' ? katalogProdukte : katalogMaterial;
+}
+
 function speichernUndNeuZeichnen() {
-  return t.set('board', 'shared', 'katalog', katalog)
-    .then(zeichnen)
-    .catch(handleError);
+  return t.set('board', 'shared', {
+    katalogProdukte: katalogProdukte,
+    katalogMaterial: katalogMaterial
+  }).then(zeichnen).catch(handleError);
+}
+
+function handleError(err) {
+  console.error(err);
+}
+
+function renderLiefOptions(selected) {
+  var html = '<option value="">- Kein Lieferant -</option>';
+  lieferantenEinstellungen.forEach(function (lief) {
+    if (lief.name) {
+      html += `<option value="${escapeHtml(lief.id)}" ${lief.id === selected ? 'selected' : ''}>${escapeHtml(lief.name)}</option>`;
+    }
+  });
+  return html;
 }
 
 function zeichnen() {
   var el = document.getElementById('liste');
+  var aktiverKatalog = getActiveArray();
 
-  if (!katalog.length) {
-    el.innerHTML = '<tr><td colspan="4" class="empty-state">Noch keine Einträge.</td></tr>';
-    t.sizeTo(document.body);
-    return;
+  var quickCount = 0;
+  if (activeTab === 'produkte') {
+    quickCount = aktiverKatalog.filter(function(e) { return e && e.isQuickButton; }).length;
   }
 
-  el.innerHTML = katalog.map(function (eintrag, i) {
-    var eName = typeof eintrag === 'string' ? eintrag : eintrag.name;
-    var ePreis = (typeof eintrag === 'object' && eintrag.preis) ? formatEuro(eintrag.preis) : '';
-    var eLief = (typeof eintrag === 'object' && eintrag.lieferant) ? getLieferantName(eintrag.lieferant) : '';
+  var html = '';
 
-    return `<tr>
-      <td><strong>${escapeHtml(eName)}</strong></td>
-      <td>${escapeHtml(eLief)}</td>
-      <td class="zahl">${escapeHtml(ePreis)}</td>
+  if (editIndex === 'new') {
+    var showFav = activeTab === 'produkte';
+    html += `<tr>`;
+    if (showFav) html += `<td style="text-align: center;"></td>`;
+    html += `
+      <td><input type="text" id="inline-name-new" class="inline-input" placeholder="Name"></td>
+      ${showFav ? '<td></td>' : `<td><select id="inline-lief-new" class="inline-input">${renderLiefOptions('')}</select></td>`}
+      <td><input type="number" id="inline-preis-new" class="inline-input" placeholder="Preis" step="0.01"></td>
       <td class="katalog-actions">
-        <span class="bearbeiten" data-i="${i}" title="Bearbeiten">Bearbeiten</span>
-        <span class="loeschen" data-i="${i}" title="Löschen">Löschen</span>
+        <button class="btn-speichern-inline" onclick="speichernInline('new')">Speichern</button>
+        <span class="loeschen" style="margin-left:8px;" onclick="cancelEdit()">Abbrechen</span>
       </td>
     </tr>`;
-  }).join('');
+  }
 
-  el.querySelectorAll('.loeschen').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      katalog.splice(parseInt(btn.getAttribute('data-i'), 10), 1);
-      speichernUndNeuZeichnen();
-    });
-  });
+  if (!aktiverKatalog.length && editIndex !== 'new') {
+    html += '<tr><td colspan="5" class="empty-state">Noch keine Einträge in diesem Bereich.</td></tr>';
+  } else {
+    html += aktiverKatalog.map(function (eintrag, i) {
+      var eName = typeof eintrag === 'string' ? eintrag : eintrag.name;
+      var ePreis = (typeof eintrag === 'object' && eintrag.preis) ? eintrag.preis : '';
+      var eLief = (typeof eintrag === 'object' && eintrag.lieferant) ? eintrag.lieferant : '';
+      var isQ = (typeof eintrag === 'object' && eintrag.isQuickButton) ? true : false;
+      var showFav = activeTab === 'produkte';
 
-  el.querySelectorAll('.bearbeiten').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      editIndex = parseInt(btn.getAttribute('data-i'), 10);
-      var item = katalog[editIndex];
-      var name = typeof item === 'string' ? item : item.name;
-      var preis = (typeof item === 'object' && item.preis) ? item.preis : '';
-      var lief = (typeof item === 'object' && item.lieferant) ? item.lieferant : '';
+      if (i === editIndex) {
+        var row = `<tr>`;
+        if (showFav) row += `<td style="text-align: center;"></td>`;
+        row += `
+          <td><input type="text" id="inline-name-${i}" class="inline-input" value="${escapeHtml(eName)}"></td>
+          ${showFav ? '<td></td>' : `<td><select id="inline-lief-${i}" class="inline-input">${renderLiefOptions(eLief)}</select></td>`}
+          <td><input type="number" id="inline-preis-${i}" class="inline-input" value="${ePreis}" step="0.01"></td>
+          <td class="katalog-actions">
+            <button class="btn-speichern-inline" onclick="speichernInline(${i})">Speichern</button>
+            <span class="loeschen" style="margin-left:8px;" onclick="cancelEdit()">Abbrechen</span>
+          </td>
+        </tr>`;
+        return row;
+      }
 
-      document.getElementById('neuer-eintrag').value = name;
-      document.getElementById('neuer-preis').value = preis;
-      document.getElementById('neuer-lieferant').value = lief;
+      var ePreisDisp = ePreis ? formatEuro(ePreis) : '';
+      var eLiefDisp = eLief ? getLieferantName(eLief) : '';
+      
+      var row = `<tr>`;
+      if (showFav) {
+        var disabledAttr = (!isQ && quickCount >= 6) ? 'disabled' : '';
+        row += `<td style="text-align: center;"><input type="checkbox" class="fav-check" onchange="toggleQuickBtn(${i}, this.checked)" ${isQ ? 'checked' : ''} ${disabledAttr}></td>`;
+      }
+      
+      row += `
+        <td><strong>${escapeHtml(eName)}</strong></td>
+        <td>${showFav ? '' : escapeHtml(eLiefDisp)}</td>
+        <td class="zahl">${escapeHtml(ePreisDisp)}</td>
+        <td class="katalog-actions">
+          <span class="bearbeiten" onclick="startEdit(${i})" title="Bearbeiten">Bearbeiten</span>
+          <span class="loeschen" onclick="loeschenEintrag(${i})" title="Löschen">Löschen</span>
+        </td>
+      </tr>`;
+      return row;
+    }).join('');
+  }
 
-      var btnAdd = document.getElementById('hinzufuegen');
-      btnAdd.textContent = 'Speichern';
-      btnAdd.style.backgroundColor = 'var(--trello-blue)';
-      btnAdd.style.color = 'white';
-
-      document.getElementById('neuer-eintrag').focus();
-    });
-  });
+  el.innerHTML = html;
+  
+  // Update Header depending on tab
+  var thFav = document.getElementById('th-fav');
+  var thLief = document.getElementById('th-lief');
+  if (activeTab === 'produkte') {
+    if (thFav) thFav.style.display = 'table-cell';
+    if (thLief) thLief.textContent = ''; // Hide header content for products since they don't have suppliers
+  } else {
+    if (thFav) thFav.style.display = 'none';
+    if (thLief) thLief.textContent = 'Std. Lieferant';
+  }
 
   t.sizeTo(document.body);
 }
 
-function showError(element) {
-  element.classList.remove('error-blink');
-  void element.offsetWidth; // reflow
-  element.classList.add('error-blink');
-  element.focus();
-}
+window.toggleQuickBtn = function(index, isChecked) {
+  var aktiverKatalog = getActiveArray();
+  if (aktiverKatalog[index]) {
+    if (typeof aktiverKatalog[index] === 'string') {
+      aktiverKatalog[index] = { name: aktiverKatalog[index] };
+    }
+    aktiverKatalog[index].isQuickButton = isChecked;
+    speichernUndNeuZeichnen();
+  }
+};
 
-function hinzufuegen() {
-  var feld = document.getElementById('neuer-eintrag');
-  var preisFeld = document.getElementById('neuer-preis');
-  var liefFeld = document.getElementById('neuer-lieferant');
-  var btnAdd = document.getElementById('hinzufuegen');
+window.startEdit = function(index) {
+  editIndex = index;
+  zeichnen();
+};
 
-  var wert = feld.value.trim();
-  var preis = preisFeld.value.trim();
-  var lief = liefFeld.value;
+window.cancelEdit = function() {
+  editIndex = null;
+  zeichnen();
+};
+
+window.loeschenEintrag = function(index) {
+  getActiveArray().splice(index, 1);
+  speichernUndNeuZeichnen();
+};
+
+window.speichernInline = function(index) {
+  var aktiverKatalog = getActiveArray();
+  var nameEl = document.getElementById('inline-name-' + index);
+  var preisEl = document.getElementById('inline-preis-' + index);
+  var liefEl = document.getElementById('inline-lief-' + index);
+
+  var wert = nameEl ? nameEl.value.trim() : '';
+  var preis = preisEl ? preisEl.value.trim().replace(',', '.') : '';
+  var lief = liefEl ? liefEl.value : '';
 
   if (!wert) {
-    showError(feld);
+    nameEl.focus();
     return;
   }
 
   if (preis !== '') {
-    preis = preis.replace(',', '.');
     var pVal = parseFloat(preis);
     if (isNaN(pVal) || pVal < 0) {
-      showError(preisFeld);
+      preisEl.focus();
       return;
     }
   }
 
-  // Check if name already exists (and is not the one we are editing)
-  var exists = katalog.findIndex(function (k) {
+  // Check if name already exists
+  var exists = aktiverKatalog.findIndex(function (k) {
     var kName = typeof k === 'string' ? k : k.name;
     return kName.trim().toLowerCase() === wert.toLowerCase();
   });
 
-  if (exists !== -1 && exists !== editIndex) {
-    alert('Dieser Artikel existiert bereits im Katalog.');
-    feld.focus();
+  if (exists !== -1 && exists !== index) {
+    alert('Dieser Artikel existiert bereits in dieser Liste.');
+    nameEl.focus();
     return;
   }
 
-  if (editIndex !== null) {
-    katalog[editIndex] = { name: wert, preis: preis, lieferant: lief };
-    editIndex = null;
-    btnAdd.textContent = 'Hinzufügen';
-    btnAdd.style.backgroundColor = '';
-    btnAdd.style.color = '';
+  var itemData = { name: wert, preis: preis, lieferant: lief };
+  
+  if (index === 'new') {
+    aktiverKatalog.push(itemData);
   } else {
-    katalog.push({ name: wert, preis: preis, lieferant: lief });
+    var oldItem = aktiverKatalog[index];
+    if (typeof oldItem === 'object' && oldItem.isQuickButton) {
+      itemData.isQuickButton = true;
+    }
+    aktiverKatalog[index] = itemData;
   }
 
-  katalog.sort(function (a, b) {
+  aktiverKatalog.sort(function (a, b) {
     var nameA = typeof a === 'string' ? a : a.name;
     var nameB = typeof b === 'string' ? b : b.name;
     return nameA.localeCompare(nameB, 'de');
   });
 
-  feld.value = '';
-  preisFeld.value = '';
-  liefFeld.value = '';
-  feld.focus();
+  editIndex = null;
   speichernUndNeuZeichnen();
-}
+};
 
-document.getElementById('hinzufuegen').addEventListener('click', hinzufuegen);
-['neuer-eintrag', 'neuer-preis', 'neuer-lieferant'].forEach(function (id) {
-  document.getElementById(id).addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') hinzufuegen();
-  });
+document.getElementById('btn-neu-zeile').addEventListener('click', function() {
+  editIndex = 'new';
+  zeichnen();
+});
+
+// Event Listeners for Tabs
+document.getElementById('tab-produkte').addEventListener('click', function() {
+  activeTab = 'produkte';
+  editIndex = null;
+  document.getElementById('tab-produkte').classList.add('active');
+  document.getElementById('tab-material').classList.remove('active');
+  zeichnen();
+});
+
+document.getElementById('tab-material').addEventListener('click', function() {
+  activeTab = 'material';
+  editIndex = null;
+  document.getElementById('tab-material').classList.add('active');
+  document.getElementById('tab-produkte').classList.remove('active');
+  zeichnen();
 });
 
 t.render(function () {
   Promise.all([
-    t.get('board', 'shared', 'katalog', STANDARD_KATALOG),
+    t.get('board', 'shared', 'katalogProdukte'),
+    t.get('board', 'shared', 'katalogMaterial'),
+    t.get('board', 'shared', 'katalog'), // fallback for migration
     t.get('board', 'shared', 'lieferanten')
   ]).then(function (res) {
-    var gespeichert = res[0];
-    var rawLief = res[1];
+    var storedProdukte = res[0];
+    var storedMaterial = res[1];
+    var oldKatalog = res[2];
+    var rawLief = res[3];
 
     lieferantenEinstellungen = [];
     if (rawLief && typeof rawLief === 'object' && !Array.isArray(rawLief)) {
@@ -168,23 +256,23 @@ t.render(function () {
       lieferantenEinstellungen = rawLief;
     }
 
-    // Populate Lieferanten Dropdown
-    var select = document.getElementById('neuer-lieferant');
-    var html = '<option value="">- Kein Lieferant -</option>';
-    lieferantenEinstellungen.forEach(function (lief) {
-      if (lief.name) {
-        html += '<option value="' + escapeHtml(lief.id) + '">' + escapeHtml(lief.name) + '</option>';
-      }
-    });
-    select.innerHTML = html;
-
-    // Migrate string array to object array if needed
-    katalog = gespeichert.map(function (item) {
-      if (typeof item === 'string') {
-        return { name: item, preis: '', lieferant: '' };
-      }
-      return item;
-    });
+    // Migration logic
+    if (!storedProdukte && !storedMaterial && oldKatalog && oldKatalog.length > 0) {
+      oldKatalog.forEach(function(item) {
+        var isObj = typeof item === 'object';
+        var hasLief = isObj && item.lieferant && item.lieferant.trim() !== '';
+        var migratedItem = isObj ? item : { name: item, preis: '', lieferant: '' };
+        if (hasLief) {
+          katalogMaterial.push(migratedItem);
+        } else {
+          katalogProdukte.push(migratedItem);
+        }
+      });
+      t.set('board', 'shared', { katalogProdukte: katalogProdukte, katalogMaterial: katalogMaterial });
+    } else {
+      katalogProdukte = storedProdukte || [];
+      katalogMaterial = storedMaterial || [];
+    }
 
     var context = t.getContext();
     if (context && context.theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');

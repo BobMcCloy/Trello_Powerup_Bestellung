@@ -16,35 +16,32 @@
   </div>
 
   <div id="inhalt"></div>
-  <datalist id="katalog-liste"></datalist>
+  <datalist id="katalog-produkte-liste"></datalist>
+  <datalist id="katalog-material-liste"></datalist>
 
   <!-- OVERLAY: Hauptartikel -->
   <div id="overlay-haupt" class="overlay-bg">
     <div class="overlay-box">
       <div class="overlay-header">
-        Neuer Hauptartikel
+        Neues Produkt (Hauptartikel)
         <button class="close-btn" onclick="closeOverlays()">✕</button>
       </div>
+      <div id="quick-buttons-container" class="quick-btn-grid" style="display:none; margin-bottom: 15px;"></div>
+      
       <div class="form-row">
+        <div class="input-group col-flex">
+          <label for="artikel">Artikelname</label>
+          <input id="artikel" type="text" list="katalog-produkte-liste" placeholder="z. B. Trauerkranz" onfocus="this.select()">
+        </div>
         <div class="input-group col-stk">
           <label for="stk">Stk</label>
           <input id="stk" type="number" min="1" value="1" onfocus="this.select()">
         </div>
-        <div class="input-group col-flex">
-          <label for="artikel">Artikelname</label>
-          <input id="artikel" type="text" list="katalog-liste" placeholder="z. B. Rosen rot" onfocus="this.select()">
-        </div>
       </div>
       <div class="form-row">
         <div class="input-group col-flex">
-          <label for="preis">Preis (€)</label>
+          <label for="preis">Verkaufspreis (€)</label>
           <input id="preis" type="number" step="0.01" min="0" placeholder="0.00" onfocus="this.select()">
-        </div>
-        <div class="input-group col-flex">
-          <label for="lieferant">Lieferant</label>
-          <select id="lieferant" class="form-select">
-            <option value="">- Kein Lieferant -</option>
-          </select>
         </div>
       </div>
       <button id="speichern" class="btn-hinzufuegen mt-5">Hinzufügen</button>
@@ -55,7 +52,7 @@
   <div id="overlay-sub" class="overlay-bg">
     <div class="overlay-box">
       <div class="overlay-header">
-        Unterartikel hinzufügen
+        Material / Extra hinzufügen
         <button class="close-btn" onclick="closeOverlays()">✕</button>
       </div>
       <div class="form-row">
@@ -64,8 +61,8 @@
           <input id="sub-stk" type="number" min="1" value="1" onfocus="this.select()">
         </div>
         <div class="input-group col-flex">
-          <label for="sub-art">Artikelname</label>
-          <input id="sub-art" type="text" list="katalog-liste" placeholder="Tippen oder wählen..." onfocus="this.select()">
+          <label for="sub-art">Materialname</label>
+          <input id="sub-art" type="text" list="katalog-material-liste" placeholder="z. B. Rose Rot..." onfocus="this.select()">
         </div>
       </div>
       <div class="form-row">
