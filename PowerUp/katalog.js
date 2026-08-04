@@ -36,7 +36,7 @@ function renderLiefOptions(selected) {
   var html = '<option value="">- Kein Lieferant -</option>';
   lieferantenEinstellungen.forEach(function (lief) {
     if (lief.name) {
-      html += `<option value="${escapeHtml(lief.id)}" ${lief.id === selected ? 'selected' : ''}>${escapeHtml(lief.name)}</option>`;
+      html += `<option value="${escapeHtmlAttr(lief.id)}" ${lief.id === selected ? 'selected' : ''}>${escapeHtml(lief.name)}</option>`;
     }
   });
   return html;
@@ -62,8 +62,8 @@ function zeichnen() {
       ${showFav ? '<td></td>' : `<td><select id="inline-lief-new" class="inline-input">${renderLiefOptions('')}</select></td>`}
       <td><input type="number" id="inline-preis-new" class="inline-input" placeholder="Preis" step="0.01"></td>
       <td class="katalog-actions">
-        <button class="btn-speichern-inline" onclick="speichernInline('new')">Speichern</button>
-        <span class="loeschen" style="margin-left:8px;" onclick="cancelEdit()">Abbrechen</span>
+        <button class="btn-speichern-inline" data-idx="new">Speichern</button>
+        <span class="loeschen" style="margin-left:8px;" data-action="cancel">Abbrechen</span>
       </td>
     </tr>`;
   }
@@ -82,24 +82,24 @@ function zeichnen() {
         var row = `<tr>`;
         if (showFav) row += `<td style="text-align: center;"></td>`;
         row += `
-          <td><input type="text" id="inline-name-${i}" class="inline-input" value="${escapeHtml(eName)}"></td>
+          <td><input type="text" id="inline-name-${i}" class="inline-input" value="${escapeHtmlAttr(eName)}"></td>
           ${showFav ? '<td></td>' : `<td><select id="inline-lief-${i}" class="inline-input">${renderLiefOptions(eLief)}</select></td>`}
-          <td><input type="number" id="inline-preis-${i}" class="inline-input" value="${ePreis}" step="0.01"></td>
+          <td><input type="number" id="inline-preis-${i}" class="inline-input" value="${escapeHtmlAttr(ePreis)}" step="0.01"></td>
           <td class="katalog-actions">
-            <button class="btn-speichern-inline" onclick="speichernInline(${i})">Speichern</button>
-            <span class="loeschen" style="margin-left:8px;" onclick="cancelEdit()">Abbrechen</span>
+            <button class="btn-speichern-inline" data-idx="${i}">Speichern</button>
+            <span class="loeschen" style="margin-left:8px;" data-action="cancel">Abbrechen</span>
           </td>
         </tr>`;
         return row;
       }
 
       var ePreisDisp = ePreis ? formatEuro(ePreis) : '';
-      var eLiefDisp = eLief ? getLieferantName(eLief) : '';
+      var eLiefDisp = eLief ? getLieferantName(eLief, lieferantenEinstellungen) : '';
       
       var row = `<tr>`;
       if (showFav) {
         var disabledAttr = (!isQ && quickCount >= 6) ? 'disabled' : '';
-        row += `<td style="text-align: center;"><input type="checkbox" class="fav-check" onchange="toggleQuickBtn(${i}, this.checked)" ${isQ ? 'checked' : ''} ${disabledAttr}></td>`;
+        row += `<td style="text-align: center;"><input type="checkbox" class="fav-check" data-idx="${i}" ${isQ ? 'checked' : ''} ${disabledAttr}></td>`;
       }
       
       row += `
@@ -107,8 +107,8 @@ function zeichnen() {
         <td>${showFav ? '' : escapeHtml(eLiefDisp)}</td>
         <td class="zahl">${escapeHtml(ePreisDisp)}</td>
         <td class="katalog-actions">
-          <span class="bearbeiten" onclick="startEdit(${i})" title="Bearbeiten">Bearbeiten</span>
-          <span class="loeschen" onclick="loeschenEintrag(${i})" title="Löschen">Löschen</span>
+          <span class="bearbeiten" data-idx="${i}" title="Bearbeiten">Bearbeiten</span>
+          <span class="loeschen" data-action="delete" data-idx="${i}" title="Löschen">Löschen</span>
         </td>
       </tr>`;
       return row;
@@ -131,7 +131,7 @@ function zeichnen() {
   t.sizeTo(document.body);
 }
 
-window.toggleQuickBtn = function(index, isChecked) {
+function toggleQuickBtn(index, isChecked) {
   var aktiverKatalog = getActiveArray();
   if (aktiverKatalog[index]) {
     if (typeof aktiverKatalog[index] === 'string') {
@@ -140,24 +140,24 @@ window.toggleQuickBtn = function(index, isChecked) {
     aktiverKatalog[index].isQuickButton = isChecked;
     speichernUndNeuZeichnen();
   }
-};
+}
 
-window.startEdit = function(index) {
+function startEdit(index) {
   editIndex = index;
   zeichnen();
-};
+}
 
-window.cancelEdit = function() {
+function cancelEdit() {
   editIndex = null;
   zeichnen();
-};
+}
 
-window.loeschenEintrag = function(index) {
+function loeschenEintrag(index) {
   getActiveArray().splice(index, 1);
   speichernUndNeuZeichnen();
-};
+}
 
-window.speichernInline = function(index) {
+function speichernInline(index) {
   var aktiverKatalog = getActiveArray();
   var nameEl = document.getElementById('inline-name-' + index);
   var preisEl = document.getElementById('inline-preis-' + index);
@@ -186,8 +186,8 @@ window.speichernInline = function(index) {
     return kName.trim().toLowerCase() === wert.toLowerCase();
   });
 
-  if (exists !== -1 && exists !== index) {
-    alert('Dieser Artikel existiert bereits in dieser Liste.');
+  if (exists !== -1 && exists !== (index === 'new' ? -1 : parseInt(index, 10))) {
+    showToast('Dieser Artikel existiert bereits in dieser Liste.', true);
     nameEl.focus();
     return;
   }
@@ -197,11 +197,12 @@ window.speichernInline = function(index) {
   if (index === 'new') {
     aktiverKatalog.push(itemData);
   } else {
-    var oldItem = aktiverKatalog[index];
+    var idxNum = parseInt(index, 10);
+    var oldItem = aktiverKatalog[idxNum];
     if (typeof oldItem === 'object' && oldItem.isQuickButton) {
       itemData.isQuickButton = true;
     }
-    aktiverKatalog[index] = itemData;
+    aktiverKatalog[idxNum] = itemData;
   }
 
   aktiverKatalog.sort(function (a, b) {
@@ -212,7 +213,26 @@ window.speichernInline = function(index) {
 
   editIndex = null;
   speichernUndNeuZeichnen();
-};
+}
+
+document.getElementById('liste').addEventListener('click', function(e) {
+  var btn = e.target;
+  if (btn.classList.contains('btn-speichern-inline')) {
+    speichernInline(btn.dataset.idx);
+  } else if (btn.classList.contains('loeschen') && btn.dataset.action === 'cancel') {
+    cancelEdit();
+  } else if (btn.classList.contains('bearbeiten')) {
+    startEdit(parseInt(btn.dataset.idx, 10));
+  } else if (btn.classList.contains('loeschen') && btn.dataset.action === 'delete') {
+    loeschenEintrag(parseInt(btn.dataset.idx, 10));
+  }
+});
+
+document.getElementById('liste').addEventListener('change', function(e) {
+  if (e.target.classList.contains('fav-check')) {
+    toggleQuickBtn(parseInt(e.target.dataset.idx, 10), e.target.checked);
+  }
+});
 
 document.getElementById('btn-neu-zeile').addEventListener('click', function() {
   editIndex = 'new';
@@ -248,13 +268,7 @@ t.render(function () {
     var oldKatalog = res[2];
     var rawLief = res[3];
 
-    lieferantenEinstellungen = [];
-    if (rawLief && typeof rawLief === 'object' && !Array.isArray(rawLief)) {
-      if (rawLief.lief1 && rawLief.lief1.name) lieferantenEinstellungen.push({ id: 'lief1', name: rawLief.lief1.name });
-      if (rawLief.lief2 && rawLief.lief2.name) lieferantenEinstellungen.push({ id: 'lief2', name: rawLief.lief2.name });
-    } else if (Array.isArray(rawLief)) {
-      lieferantenEinstellungen = rawLief;
-    }
+    lieferantenEinstellungen = normalizeLieferantenEinstellungen(rawLief);
 
     // Migration logic
     if (!storedProdukte && !storedMaterial && oldKatalog && oldKatalog.length > 0) {

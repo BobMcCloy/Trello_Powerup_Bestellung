@@ -1,3 +1,4 @@
+(function() {
 // Initialisierung mit Schlüsseln aus der config.js
 var POWERUP_ID = CONFIG.POWERUP_ID;
 var APP_KEY = CONFIG.TRELLO_APP_KEY;
@@ -11,12 +12,7 @@ var viewMode = 'auswertung';
 var lieferantenEinstellungen = null;
 var letzteManagerItems = [];
 
-function getLieferantName(liefKey) {
-  if (!liefKey) return '';
-  var found = lieferantenEinstellungen.find(l => l.id === liefKey);
-  if (found) return found.name;
-  return liefKey;
-}
+// getLieferantName wird aus utils.js verwendet
 
 // ==========================================
 // Filter-Persistenz Logik
@@ -83,136 +79,147 @@ function stelleFilterZustandWiederHer() {
 
 var inFlightRequests = new Set();
 
-window.updateBestellStatus = function (btn, cardId, mainId, subId, neuerStatus) {
-  if (inFlightRequests.has(cardId)) {
-    return; // Block concurrent requests for the same card
-  }
-
-  inFlightRequests.add(cardId);
-  var alterText = btn.innerHTML;
-  btn.innerHTML = '⏳...';
-
-  // Disable all action buttons for this card
-  var cardButtons = document.querySelectorAll(`button[data-card-id="${cardId}"]`);
-  cardButtons.forEach(b => b.disabled = true);
-
-  t.get(cardId, 'shared', 'produkte', []).then(function (produkte) {
-    var mainIdx = produkte.findIndex(p => p.id === mainId);
-    if (mainIdx !== -1 && produkte[mainIdx].unterartikel) {
-      var subIdx = produkte[mainIdx].unterartikel.findIndex(s => s.id === subId);
-      if (subIdx !== -1) {
-        produkte[mainIdx].unterartikel[subIdx].status = neuerStatus;
-      }
-    }
-    return t.set(cardId, 'shared', 'produkte', produkte).then(function () {
-      return produkte;
-    });
-  }).then(function (produkte) {
-    var card = alleKarten.find(c => c.id === cardId);
-    if (card) {
-      if (!card.pluginData) card.pluginData = [];
-      var pd = card.pluginData.find(p => p.idPlugin === POWERUP_ID);
-      var wert = { produkte: produkte };
-      if (pd) {
-        pd.value = JSON.stringify(wert);
-      } else {
-        card.pluginData.push({ idPlugin: POWERUP_ID, value: JSON.stringify(wert) });
-      }
-    }
-    wendeFilterAn();
-    syncCardLabels(t, cardId, produkte);
-  }).catch(function (err) {
-    console.error('Fehler beim Speichern:', err);
-    btn.innerHTML = 'Fehler';
-    setTimeout(function () {
-      btn.innerHTML = alterText;
-      btn.disabled = false;
-    }, 3000);
-  }).finally(function () {
-    inFlightRequests.delete(cardId);
-    var cardButtons = document.querySelectorAll(`button[data-card-id="${cardId}"]`);
-    cardButtons.forEach(b => {
-      // Only re-enable if it's not the clicked button (which might be handled differently, though here we just re-enable all)
-      b.disabled = false;
-      if (b === btn && b.innerHTML === '⏳...') {
-        b.innerHTML = alterText;
-      }
-    });
-  });
-};
-
-window.updateMehrereBestellStatus = function (btn, sourceJson, neuerStatus) {
-  var sources;
-  try {
-    sources = JSON.parse(decodeURIComponent(sourceJson));
-  } catch (e) {
-    console.error("Fehler beim Parsen der Quellen:", e);
-    return;
-  }
-
-  if (sources.length === 0) return;
-
-  var alterText = btn.innerHTML;
-  btn.innerHTML = '⏳...';
-  btn.disabled = true;
-
-  var byCard = {};
-  sources.forEach(function (src) {
-    if (!byCard[src.cardId]) byCard[src.cardId] = [];
-    byCard[src.cardId].push(src);
-  });
-
-  var cardIds = Object.keys(byCard);
-  var promises = cardIds.map(function (cardId) {
+  function updateBestellStatus(btn, cardId, mainId, subId, neuerStatus) {
     if (inFlightRequests.has(cardId)) {
-      return Promise.resolve();
+      return; // Block concurrent requests for the same card
     }
-    inFlightRequests.add(cardId);
 
-    return t.get(cardId, 'shared', 'produkte', []).then(function (produkte) {
-      var changed = false;
-      byCard[cardId].forEach(function (src) {
-        var mainIdx = produkte.findIndex(p => p.id === src.mainId);
-        if (mainIdx !== -1 && produkte[mainIdx].unterartikel) {
-          var subIdx = produkte[mainIdx].unterartikel.findIndex(s => s.id === src.subId);
-          if (subIdx !== -1) {
-            produkte[mainIdx].unterartikel[subIdx].status = neuerStatus;
-            changed = true;
-          }
+    inFlightRequests.add(cardId);
+    var alterText = btn.innerHTML;
+    btn.innerHTML = '⏳...';
+
+    // Disable all action buttons for this card
+    var cardButtons = document.querySelectorAll(`button[data-card-id="${cardId}"]`);
+    cardButtons.forEach(b => b.disabled = true);
+
+    t.get(cardId, 'shared', 'produkte', []).then(function (produkte) {
+      var mainIdx = produkte.findIndex(p => p.id === mainId);
+      if (mainIdx !== -1 && produkte[mainIdx].unterartikel) {
+        var subIdx = produkte[mainIdx].unterartikel.findIndex(s => s.id === subId);
+        if (subIdx !== -1) {
+          produkte[mainIdx].unterartikel[subIdx].status = neuerStatus;
         }
+      }
+      return t.set(cardId, 'shared', 'produkte', produkte).then(function () {
+        return produkte;
       });
-      if (changed) {
-        return t.set(cardId, 'shared', 'produkte', produkte).then(function () {
-          return produkte;
-        });
-      }
-      return null;
     }).then(function (produkte) {
-      if (produkte) {
-        var card = alleKarten.find(c => c.id === cardId);
-        if (card) {
-          if (!card.pluginData) card.pluginData = [];
-          var pd = card.pluginData.find(p => p.idPlugin === POWERUP_ID);
-          var wert = { produkte: produkte };
-          if (pd) {
-            pd.value = JSON.stringify(wert);
-          } else {
-            card.pluginData.push({ idPlugin: POWERUP_ID, value: JSON.stringify(wert) });
-          }
+      var card = alleKarten.find(c => c.id === cardId);
+      if (card) {
+        if (!card.pluginData) card.pluginData = [];
+        var pd = card.pluginData.find(p => p.idPlugin === POWERUP_ID);
+        var wert = { produkte: produkte };
+        if (pd) {
+          pd.value = JSON.stringify(wert);
+        } else {
+          card.pluginData.push({ idPlugin: POWERUP_ID, value: JSON.stringify(wert) });
         }
-        syncCardLabels(t, cardId, produkte);
       }
+      wendeFilterAn();
+      syncCardLabels(t, cardId, produkte);
     }).catch(function (err) {
-      console.error('Fehler bei Karte ' + cardId + ':', err);
+      console.error('Fehler beim Speichern:', err);
+      btn.innerHTML = 'Fehler';
+      setTimeout(function () {
+        btn.innerHTML = alterText;
+        btn.disabled = false;
+      }, 3000);
     }).finally(function () {
       inFlightRequests.delete(cardId);
+      var cardButtons = document.querySelectorAll(`button[data-card-id="${cardId}"]`);
+      cardButtons.forEach(b => {
+        b.disabled = false;
+        if (b === btn && b.innerHTML === '⏳...') {
+          b.innerHTML = alterText;
+        }
+      });
     });
-  });
+  }
 
-  Promise.all(promises).then(function () {
-    wendeFilterAn();
-  });
-};
+  function updateMehrereBestellStatus(btn, sourceJson, neuerStatus) {
+    var sources;
+    try {
+      sources = JSON.parse(decodeURIComponent(sourceJson));
+    } catch (e) {
+      console.error("Fehler beim Parsen der Quellen:", e);
+      return;
+    }
+
+    if (sources.length === 0) return;
+
+    var alterText = btn.innerHTML;
+    btn.innerHTML = '⏳...';
+    btn.disabled = true;
+
+    var byCard = {};
+    sources.forEach(function (src) {
+      if (!byCard[src.cardId]) byCard[src.cardId] = [];
+      byCard[src.cardId].push(src);
+    });
+
+    var cardIds = Object.keys(byCard);
+
+    // Limit concurrency to avoid 429
+    var limit = 3;
+    var i = 0;
+    
+    function next() {
+      if (i >= cardIds.length) return Promise.resolve();
+      var cardId = cardIds[i++];
+      if (inFlightRequests.has(cardId)) {
+        return next();
+      }
+      inFlightRequests.add(cardId);
+
+      return t.get(cardId, 'shared', 'produkte', []).then(function (produkte) {
+        var changed = false;
+        byCard[cardId].forEach(function (src) {
+          var mainIdx = produkte.findIndex(p => p.id === src.mainId);
+          if (mainIdx !== -1 && produkte[mainIdx].unterartikel) {
+            var subIdx = produkte[mainIdx].unterartikel.findIndex(s => s.id === src.subId);
+            if (subIdx !== -1) {
+              produkte[mainIdx].unterartikel[subIdx].status = neuerStatus;
+              changed = true;
+            }
+          }
+        });
+        if (changed) {
+          return t.set(cardId, 'shared', 'produkte', produkte).then(function () {
+            return produkte;
+          });
+        }
+        return null;
+      }).then(function (produkte) {
+        if (produkte) {
+          var card = alleKarten.find(c => c.id === cardId);
+          if (card) {
+            if (!card.pluginData) card.pluginData = [];
+            var pd = card.pluginData.find(p => p.idPlugin === POWERUP_ID);
+            var wert = { produkte: produkte };
+            if (pd) {
+              pd.value = JSON.stringify(wert);
+            } else {
+              card.pluginData.push({ idPlugin: POWERUP_ID, value: JSON.stringify(wert) });
+            }
+          }
+          syncCardLabels(t, cardId, produkte);
+        }
+      }).catch(function (err) {
+        console.error('Fehler bei Karte ' + cardId + ':', err);
+      }).finally(function () {
+        inFlightRequests.delete(cardId);
+      }).then(next);
+    }
+
+    var workers = [];
+    for (var w = 0; w < limit; w++) {
+      workers.push(next());
+    }
+
+    Promise.all(workers).then(function () {
+      wendeFilterAn();
+    });
+  }
 
 t.get('board', 'shared', 'katalog', STANDARD_KATALOG).then(function (gespeichert) {
   unterartikelKatalog = gespeichert;
@@ -226,13 +233,7 @@ t.get('board', 'shared', 'katalog', STANDARD_KATALOG).then(function (gespeichert
 
 t.get('board', 'shared', 'lieferanten').then(function (data) {
   var rawLief = data;
-  lieferantenEinstellungen = [];
-  if (rawLief && typeof rawLief === 'object' && !Array.isArray(rawLief)) {
-    if (rawLief.lief1 && rawLief.lief1.name) lieferantenEinstellungen.push({ id: 'lief1', name: rawLief.lief1.name });
-    if (rawLief.lief2 && rawLief.lief2.name) lieferantenEinstellungen.push({ id: 'lief2', name: rawLief.lief2.name });
-  } else if (Array.isArray(rawLief)) {
-    lieferantenEinstellungen = rawLief;
-  }
+  lieferantenEinstellungen = normalizeLieferantenEinstellungen(rawLief);
 
   var select = document.getElementById('filter-lieferant');
   lieferantenEinstellungen.forEach(function (lief) {
@@ -287,8 +288,8 @@ function ladeAuswertung() {
       listenSelect.value = gemerkteListe;
     }
 
-    var url = 'https://api.trello.com/1/boards/' + boardId + '/cards?pluginData=true&fields=name,idList,due&key=' + APP_KEY + '&token=' + trelloToken;
-    return fetch(url).then(function (r) { if (!r.ok) throw new Error('API-Fehler'); return r.json(); });
+    var url = 'https://api.trello.com/1/boards/' + boardId + '/cards?pluginData=true&fields=name,idList,due';
+    return apiFetch(url, {}, APP_KEY, trelloToken);
   }).then(function (cards) {
     alleKarten = cards;
     wendeFilterAn();
@@ -300,6 +301,21 @@ function ladeAuswertung() {
 function getMapEntry(map, key, defaultObj) {
   if (!map[key]) map[key] = defaultObj;
   return map[key];
+}
+
+function parsePreisToCents(pStr) {
+  if (!pStr) return 0;
+  var clean = String(pStr).trim();
+  if (clean.includes(',') && clean.includes('.')) {
+    if (clean.lastIndexOf(',') > clean.lastIndexOf('.')) {
+      clean = clean.replace(/\./g, '').replace(',', '.');
+    } else {
+      clean = clean.replace(/,/g, '');
+    }
+  } else {
+    clean = clean.replace(',', '.');
+  }
+  return Math.round(parseFloat(clean) * 100) || 0;
 }
 
 function wendeFilterAn() {
@@ -372,31 +388,37 @@ function wendeFilterAn() {
 
         if ((hauptMatch && statusFilter === 'all') || valideSubs.length > 0) {
           var cMap = getMapEntry(summen, cardKey, { name: cardKey, items: {} });
-          var hKey = hauptName + '␟' + parseFloat(p.preis || 0).toFixed(2);
+          var hPreisCents = parsePreisToCents(p.preis);
+          var hStk = parseInt(p.stk, 10) || 0;
+          var hKey = hauptName + '␟' + (hPreisCents / 100).toFixed(2);
           var hEntry;
 
           if (groupByParent) {
-            hEntry = getMapEntry(cMap.items, hKey, { name: hauptName, preis: parseFloat(p.preis || 0), stk: 0, umsatz: 0, subs: {} });
-            hEntry.stk += parseFloat(p.stk || 0);
-            hEntry.umsatz += parseFloat(p.stk || 0) * parseFloat(p.preis || 0);
+            hEntry = getMapEntry(cMap.items, hKey, { name: hauptName, preisCents: hPreisCents, stk: 0, umsatzCents: 0, subs: {} });
+            hEntry.stk += hStk;
+            hEntry.umsatzCents += hStk * hPreisCents;
 
             valideSubs.forEach(function (sub) {
-              var sKey = sub.produkt + '␟' + parseFloat(sub.preis || 0).toFixed(2);
-              var sEntry = getMapEntry(hEntry.subs, sKey, { name: sub.produkt, preis: parseFloat(sub.preis || 0), stk: 0, umsatz: 0 });
-              sEntry.stk += parseFloat(sub.stk || 0);
-              sEntry.umsatz = 0; // Unterartikel zählen nicht zum Umsatz
+              var sPreisCents = parsePreisToCents(sub.preis);
+              var sStk = parseInt(sub.stk, 10) || 0;
+              var sKey = sub.produkt + '␟' + (sPreisCents / 100).toFixed(2);
+              var sEntry = getMapEntry(hEntry.subs, sKey, { name: sub.produkt, preisCents: sPreisCents, stk: 0, umsatzCents: 0 });
+              sEntry.stk += sStk;
+              sEntry.umsatzCents = 0; // Unterartikel zählen nicht zum Umsatz
             });
           } else {
             if (hauptMatch && statusFilter === 'all') {
-              hEntry = getMapEntry(cMap.items, hKey, { name: hauptName, preis: parseFloat(p.preis || 0), stk: 0, umsatz: 0 });
-              hEntry.stk += parseFloat(p.stk || 0);
-              hEntry.umsatz += parseFloat(p.stk || 0) * parseFloat(p.preis || 0);
+              hEntry = getMapEntry(cMap.items, hKey, { name: hauptName, preisCents: hPreisCents, stk: 0, umsatzCents: 0 });
+              hEntry.stk += hStk;
+              hEntry.umsatzCents += hStk * hPreisCents;
             }
             valideSubs.forEach(function (sub) {
-              var sKey = '↳ ' + sub.produkt + '␟' + parseFloat(sub.preis || 0).toFixed(2);
-              var sEntry = getMapEntry(cMap.items, sKey, { name: sub.produkt, preis: parseFloat(sub.preis || 0), stk: 0, umsatz: 0 });
-              sEntry.stk += parseFloat(sub.stk || 0);
-              sEntry.umsatz = 0; // Unterartikel zählen nicht zum Umsatz
+              var sPreisCents = parsePreisToCents(sub.preis);
+              var sStk = parseInt(sub.stk, 10) || 0;
+              var sKey = '↳ ' + sub.produkt + '␟' + (sPreisCents / 100).toFixed(2);
+              var sEntry = getMapEntry(cMap.items, sKey, { name: sub.produkt, preisCents: sPreisCents, stk: 0, umsatzCents: 0 });
+              sEntry.stk += sStk;
+              sEntry.umsatzCents = 0; // Unterartikel zählen nicht zum Umsatz
             });
           }
         }
@@ -422,7 +444,7 @@ function wendeFilterAn() {
             sourceItems: []
           };
         }
-        groupMap[key].sub.stk += parseFloat(item.sub.stk) || 0;
+        groupMap[key].sub.stk += parseInt(item.sub.stk, 10) || 0;
         groupMap[key].sourceItems.push({ cardId: item.card.id, mainId: item.mainId, subId: item.sub.id });
       });
       finalManagerItems = Object.values(groupMap);
@@ -449,7 +471,7 @@ function zeichneAuswertung(summen, groupByCard, groupByParent, anzahlKarten) {
     return;
   }
 
-  var globalStk = 0, globalUmsatz = 0;
+  var globalStk = 0, globalUmsatzCents = 0;
   var html = `<div class="tabellen-rahmen">
     <table>
       <thead>
@@ -471,7 +493,7 @@ function zeichneAuswertung(summen, groupByCard, groupByParent, anzahlKarten) {
     var hKeys = Object.keys(cMap.items).sort((a, b) => cMap.items[a].name.localeCompare(cMap.items[b].name, 'de'));
     hKeys.forEach(function (hk) {
       var hEntry = cMap.items[hk];
-      globalStk += hEntry.stk; globalUmsatz += hEntry.umsatz;
+      globalStk += hEntry.stk; globalUmsatzCents += hEntry.umsatzCents;
 
       var hNameClass = (groupByParent && Object.keys(hEntry.subs || {}).length > 0) ? 'font-bold ' : '';
       var hIndentClass = groupByCard ? 'pl-20 ' : '';
@@ -479,21 +501,21 @@ function zeichneAuswertung(summen, groupByCard, groupByParent, anzahlKarten) {
       html += `<tr class="auswertung-row">
         <td class="${hIndentClass}${hNameClass}">${groupByParent ? '↳ ' : ''}${escapeHtml(hEntry.name)}</td>
         <td class="zahl">${hEntry.stk}</td>
-        <td class="zahl"><span class="umsatz-pill">${formatEuro(hEntry.preis)}</span></td>
+        <td class="zahl"><span class="umsatz-pill">${formatEuro(hEntry.preisCents / 100)}</span></td>
       </tr>`;
 
       if (hEntry.subs) {
         var sKeys = Object.keys(hEntry.subs).sort((a, b) => hEntry.subs[a].name.localeCompare(hEntry.subs[b].name, 'de'));
         sKeys.forEach(function (sk) {
           var sEntry = hEntry.subs[sk];
-          globalStk += sEntry.stk; globalUmsatz += sEntry.umsatz;
+          globalStk += sEntry.stk; globalUmsatzCents += sEntry.umsatzCents;
 
           var sIndentClass = (groupByCard && groupByParent) ? 'pl-40 ' : ((groupByCard || groupByParent) ? 'pl-20 ' : '');
 
           html += `<tr>
             <td class="${sIndentClass}text-light">${groupByParent ? '↳ ' : ''}${escapeHtml(sEntry.name)}</td>
             <td class="zahl">${sEntry.stk}</td>
-            <td class="zahl"><span class="umsatz-pill">${formatEuro(sEntry.preis)}</span></td>
+            <td class="zahl"><span class="umsatz-pill">${formatEuro(sEntry.preisCents / 100)}</span></td>
           </tr>`;
         });
       }
@@ -506,13 +528,13 @@ function zeichneAuswertung(summen, groupByCard, groupByParent, anzahlKarten) {
       <tr>
         <td>Gesamt</td>
         <td class="zahl">${globalStk}</td>
-        <td class="zahl">Umsatz: ${formatEuro(globalUmsatz)}</td>
+        <td class="zahl">Umsatz: ${formatEuro(globalUmsatzCents / 100)}</td>
       </tr>
     </tfoot>
   </table></div>`;
   tabelle.innerHTML = html;
 
-  letzteAuswertung = { summen: summen, gesamtStk: globalStk, gesamtUmsatz: globalUmsatz, anzahlKarten: anzahlKarten, byCard: groupByCard, byParent: groupByParent };
+  letzteAuswertung = { summen: summen, gesamtStk: globalStk, gesamtUmsatzCents: globalUmsatzCents, anzahlKarten: anzahlKarten, byCard: groupByCard, byParent: groupByParent };
   aktualisiereDruckKopf();
   t.sizeTo(document.body);
 }
@@ -576,7 +598,7 @@ function zeichneManager(items, groupByCard, groupByParent, anzahlKarten) {
     if (!groupByCard) html += `<td>${escapeHtml(item.card.name)}</td>`;
     if (!groupByParent) html += `<td>${escapeHtml(item.mainName)}</td>`;
 
-    html += `<td class="text-light">${escapeHtml(getLieferantName(item.lieferant))}</td>`;
+    html += `<td class="text-light">${escapeHtml(getLieferantName(item.lieferant, lieferantenEinstellungen))}</td>`;
     html += `<td class="${subdentClass}${parentClass}">${groupByParent ? '↳ ' : ''}${escapeHtml(item.sub.produkt)}</td>`;
     html += `<td class="zahl"><strong>${item.sub.stk}x</strong></td>`;
     html += `<td><span class="${badgeClass}">${statusText}</span></td>`;
@@ -584,19 +606,19 @@ function zeichneManager(items, groupByCard, groupByParent, anzahlKarten) {
     if (item.isGrouped) {
       var sourceJson = encodeURIComponent(JSON.stringify(item.sourceItems));
       if (item.sub.status === 'bestellen') {
-        html += `<button class="action-btn btn-zulauf" onclick="updateMehrereBestellStatus(this, '${sourceJson}', 'zulauf')">Zulauf</button>`;
+        html += `<button class="action-btn btn-zulauf" data-action="updateMehrere" data-sources="${escapeHtmlAttr(sourceJson)}" data-status="zulauf">Zulauf</button>`;
       }
       if (item.sub.status === 'zulauf') {
-        html += `<button class="action-btn btn-vorhanden" onclick="updateMehrereBestellStatus(this, '${sourceJson}', 'vorhanden')">Vorhanden</button>`;
+        html += `<button class="action-btn btn-vorhanden" data-action="updateMehrere" data-sources="${escapeHtmlAttr(sourceJson)}" data-status="vorhanden">Vorhanden</button>`;
       }
     } else {
       if (item.sub.status === 'bestellen') {
-        html += `<button class="action-btn btn-zulauf" onclick="updateBestellStatus(this, '${item.card.id}', '${item.mainId}', '${item.sub.id}', 'zulauf')">Zulauf</button>`;
+        html += `<button class="action-btn btn-zulauf" data-action="updateBestell" data-card="${escapeHtmlAttr(item.card.id)}" data-main="${escapeHtmlAttr(item.mainId)}" data-sub="${escapeHtmlAttr(item.sub.id)}" data-status="zulauf">Zulauf</button>`;
       }
       if (item.sub.status === 'zulauf') {
-        html += `<button class="action-btn btn-vorhanden" onclick="updateBestellStatus(this, '${item.card.id}', '${item.mainId}', '${item.sub.id}', 'vorhanden')">Vorhanden</button>`;
+        html += `<button class="action-btn btn-vorhanden" data-action="updateBestell" data-card="${escapeHtmlAttr(item.card.id)}" data-main="${escapeHtmlAttr(item.mainId)}" data-sub="${escapeHtmlAttr(item.sub.id)}" data-status="vorhanden">Vorhanden</button>`;
       }
-      html += `<button class="action-btn" onclick="zurKarteSpringen('${item.card.id}')">Karte öffnen</button>`;
+      html += `<button class="action-btn" data-action="zurKarte" data-card="${escapeHtmlAttr(item.card.id)}">Karte öffnen</button>`;
     }
     html += `</td></tr>`;
   });
@@ -608,13 +630,29 @@ function zeichneManager(items, groupByCard, groupByParent, anzahlKarten) {
   t.sizeTo(document.body);
 }
 
-window.zurKarteSpringen = function (cardId) {
-  speichereFilterZustand();
-  t.showCard(cardId);
-};
+  function zurKarteSpringen(cardId) {
+    speichereFilterZustand();
+    t.showCard(cardId);
+  }
+
+  // Event Delegation for manager actions
+  document.getElementById('tabelle').addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+
+    var action = btn.dataset.action;
+    if (action === 'updateMehrere') {
+      updateMehrereBestellStatus(btn, btn.dataset.sources, btn.dataset.status);
+    } else if (action === 'updateBestell') {
+      updateBestellStatus(btn, btn.dataset.card, btn.dataset.main, btn.dataset.sub, btn.dataset.status);
+    } else if (action === 'zurKarte') {
+      zurKarteSpringen(btn.dataset.card);
+    }
+  });
 
 function aktualisiereDruckKopf() {
-  var listenText = document.getElementById('filter-liste').selectedOptions[0].textContent;
+  var selectEl = document.getElementById('filter-liste');
+  var listenText = (selectEl && selectEl.selectedOptions && selectEl.selectedOptions[0]) ? selectEl.selectedOptions[0].textContent : 'Unbekannt';
   var von = document.getElementById('filter-datum-von').value;
   var bis = document.getElementById('filter-datum-bis').value;
   var zeitraum = (von || bis) ? (von || '…') + ' bis ' + (bis || '…') : 'alle';
@@ -626,11 +664,11 @@ function aktualisiereDruckKopf() {
 }
 
 function csvFeld(wert) {
-  wert = String(wert);
+  wert = String(wert).trim();
   if (/^[=+\-@]/.test(wert)) {
-    wert = "'" + wert;
+    wert = "\t" + wert;
   }
-  if (/[;"\n]/.test(wert)) { return '"' + wert.replace(/"/g, '""') + '"'; }
+  if (/[;"\n\r]/.test(wert)) { return '"' + wert.replace(/"/g, '""') + '"'; }
   return wert;
 }
 
@@ -647,19 +685,19 @@ function exportCsv() {
     var hKeys = Object.keys(cMap.items).sort((a, b) => cMap.items[a].name.localeCompare(cMap.items[b].name, 'de'));
     hKeys.forEach(function (hk) {
       var hEntry = cMap.items[hk];
-      zeilen.push(csvFeld(cardLabel) + ';' + csvFeld(hEntry.name) + ';' + hEntry.stk + ';' + hEntry.preis.toFixed(2).replace('.', ',') + ';' + hEntry.umsatz.toFixed(2).replace('.', ','));
+      zeilen.push(csvFeld(cardLabel) + ';' + csvFeld(hEntry.name) + ';' + hEntry.stk + ';' + (hEntry.preisCents / 100).toFixed(2).replace('.', ',') + ';' + (hEntry.umsatzCents / 100).toFixed(2).replace('.', ','));
 
       if (hEntry.subs) {
         var sKeys = Object.keys(hEntry.subs).sort((a, b) => hEntry.subs[a].name.localeCompare(hEntry.subs[b].name, 'de'));
         sKeys.forEach(function (sk) {
           var sEntry = hEntry.subs[sk];
-          zeilen.push(csvFeld(cardLabel) + ';' + csvFeld('↳ ' + sEntry.name) + ';' + sEntry.stk + ';' + sEntry.preis.toFixed(2).replace('.', ',') + ';' + sEntry.umsatz.toFixed(2).replace('.', ','));
+          zeilen.push(csvFeld(cardLabel) + ';' + csvFeld('↳ ' + sEntry.name) + ';' + sEntry.stk + ';' + (sEntry.preisCents / 100).toFixed(2).replace('.', ',') + ';' + (sEntry.umsatzCents / 100).toFixed(2).replace('.', ','));
         });
       }
     });
   });
 
-  zeilen.push('Gesamt;;' + letzteAuswertung.gesamtStk + ';;' + letzteAuswertung.gesamtUmsatz.toFixed(2).replace('.', ','));
+  zeilen.push('Gesamt;;' + letzteAuswertung.gesamtStk + ';;' + (letzteAuswertung.gesamtUmsatzCents / 100).toFixed(2).replace('.', ','));
 
   var csvInhalt = zeilen.join('\r\n');
   var blob = new Blob(['\uFEFF' + csvInhalt], { type: 'text/csv;charset=utf-8;' });
@@ -702,14 +740,14 @@ document.getElementById('pdf-export').addEventListener('click', function () { wi
 
 function generateTextExport() {
   if (!letzteManagerItems || letzteManagerItems.length === 0) {
-    alert("Keine Bestell-Artikel zum Kopieren vorhanden.");
+    if (typeof showToast !== 'undefined') showToast("Keine Bestell-Artikel zum Kopieren vorhanden.", true);
     return;
   }
 
   var groupedByLieferant = {};
 
   letzteManagerItems.forEach(function (item) {
-    var lname = item.lieferant ? getLieferantName(item.lieferant) : "Unbekannt";
+    var lname = item.lieferant ? getLieferantName(item.lieferant, lieferantenEinstellungen) : "Unbekannt";
     if (!groupedByLieferant[lname]) {
       groupedByLieferant[lname] = [];
     }
@@ -726,7 +764,7 @@ function generateTextExport() {
     text += "    " + "Stk.:".padEnd(8, " ") + "Artikel:".padEnd(35, " ") + "Einzelpreis:\n";
 
     groupedByLieferant[lname].forEach(function (item) {
-      var preisNum = parseFloat(item.sub.preis) || 0;
+      var preisNum = parsePreisToCents(item.sub.preis) / 100;
       var preisStr = preisNum.toFixed(2).replace('.', ',') + " €";
 
       var artText = item.sub.produkt;
@@ -762,3 +800,4 @@ t.render(function () {
     }
   });
 });
+})();

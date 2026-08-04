@@ -15,6 +15,10 @@ document.getElementById('auth-btn').addEventListener('click', function () {
     })
     .catch(function (e) {
       console.error('Allgemeiner Auth Fehler:', e);
-      alert('Es gab einen Fehler bei der Autorisierung: ' + e.message);
+      if (typeof showToast !== 'undefined') {
+        showToast('Es gab einen Fehler bei der Autorisierung: ' + e.message, true);
+      } else {
+        alert('Es gab einen Fehler bei der Autorisierung: ' + e.message);
+      }
     });
 });

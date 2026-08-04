@@ -12,12 +12,13 @@ function renderLieferanten(lieferanten) {
   var optionsHtml = '<option value="">- Kein Label ausgewählt -</option>';
   globalLabels.forEach(function(l) {
     var displayName = escapeHtml(l.name ? l.name : ('(Ohne Name) - ' + l.color));
-    optionsHtml += '<option value="' + escapeHtml(l.id) + '">' + displayName + '</option>';
+    optionsHtml += '<option value="' + escapeHtmlAttr(l.id) + '">' + displayName + '</option>';
   });
 
   lieferanten.forEach(function(lief, index) {
     var div = document.createElement('div');
     div.className = 'form-group';
+    div.dataset.liefId = lief.id;
     div.style.marginBottom = '15px';
     div.style.padding = '10px';
     div.style.border = '1px solid var(--border)';
@@ -26,8 +27,8 @@ function renderLieferanten(lieferanten) {
 
     div.innerHTML = `
       <button class="remove-btn" type="button" style="position:absolute; top:5px; right:5px; width:24px; height:24px; padding:0; background:transparent; color:var(--text-light); border:none; cursor:pointer;" data-index="${index}">✕</button>
-      <label>Lieferant ${index + 1} Name</label>
-      <input type="text" class="lief-name-input" value="${escapeHtml(lief.name || '')}" placeholder="z.B. Volmary" style="margin-bottom:8px;">
+      <label>Lieferant Name</label>
+      <input type="text" class="lief-name-input" value="${escapeHtmlAttr(lief.name || '')}" placeholder="z.B. Volmary" style="margin-bottom:8px;">
       <label>Trello-Label</label>
       <select class="lief-label-select color-select">
         ${optionsHtml}
@@ -62,16 +63,8 @@ t.render(function() {
     t.get('board', 'shared', 'statusLabels')
   ]).then(function(res) {
     globalLabels = res[0].labels || [];
-    var data = res[1];
-
-    currentLieferanten = [];
-    if (data && typeof data === 'object' && !Array.isArray(data)) {
-      // Legacy Migration
-      if (data.lief1 && (data.lief1.name || data.lief1.labelId)) currentLieferanten.push({ id: 'lief1', name: data.lief1.name, labelId: data.lief1.labelId });
-      if (data.lief2 && (data.lief2.name || data.lief2.labelId)) currentLieferanten.push({ id: 'lief2', name: data.lief2.name, labelId: data.lief2.labelId });
-    } else if (Array.isArray(data)) {
-      currentLieferanten = data;
-    }
+    
+    currentLieferanten = normalizeLieferantenEinstellungen(res[1]);
 
     if (currentLieferanten.length === 0) {
       currentLieferanten.push({ id: 'lief_' + Date.now(), name: '', labelId: '' }); // default empty
@@ -84,7 +77,7 @@ t.render(function() {
     var optionsHtml = '<option value="">- Kein Label ausgewählt -</option>';
     globalLabels.forEach(function(l) {
       var displayName = escapeHtml(l.name ? l.name : ('(Ohne Name) - ' + l.color));
-      optionsHtml += '<option value="' + escapeHtml(l.id) + '">' + displayName + '</option>';
+      optionsHtml += '<option value="' + escapeHtmlAttr(l.id) + '">' + displayName + '</option>';
     });
     selectEl.innerHTML = optionsHtml;
     selectEl.value = statusLabels.allesBestellt || '';
@@ -103,7 +96,7 @@ document.getElementById('save-btn').addEventListener('click', function() {
   
   var groups = container.querySelectorAll('.form-group');
   groups.forEach(function(group, idx) {
-    var originalId = currentLieferanten[idx] ? currentLieferanten[idx].id : ('lief_' + Date.now() + '_' + idx);
+    var originalId = group.dataset.liefId || ('lief_' + Date.now() + '_' + idx);
     newLieferanten.push({
       id: originalId,
       name: group.querySelector('.lief-name-input').value.trim(),
