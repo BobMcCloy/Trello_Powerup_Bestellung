@@ -202,6 +202,8 @@
     var lieferant = document.getElementById('sub-lieferant').value;
     var status = document.getElementById('sub-status').value;
 
+    const savedMainId = currentMainIdForSub;
+
     t.get('card', 'shared', 'produkte', []).then(function (produkte) {
       var main = produkte.find(p => p.id === currentMainIdForSub);
       if (!main) return produkte;
@@ -224,6 +226,10 @@
     }).then(function () {
       closeOverlays();
       zeichnen();
+      setTimeout(() => {
+        const addSubBtn = document.getElementById('add-sub-btn-' + savedMainId);
+        if (addSubBtn) addSubBtn.focus();
+      }, 60);
     }).catch(handleError);
   });
 
@@ -402,7 +408,7 @@
         gesamtCents += zwischensummeCents;
 
         const hint = (p.id === letzterHauptartikelId) ? ' [ n ]' : '';
-        html += `<button class="btn-hinzufuegen btn-small mt-5" data-action="openSubOverlay" data-id="${escapeHtmlAttr(p.id)}">+ Unterartikel hinzufügen${hint}</button>`;
+        html += `<button class="btn-hinzufuegen btn-small mt-5" id="add-sub-btn-${escapeHtmlAttr(p.id)}" data-action="openSubOverlay" data-id="${escapeHtmlAttr(p.id)}">+ Unterartikel hinzufügen${hint}</button>`;
         html += `</div></td></tr>`;
       });
 
@@ -461,6 +467,8 @@
         }
         if (liefEl && found.lieferant && !liefEl.value) {
           liefEl.value = found.lieferant;
+          const statusEl = document.getElementById('sub-status');
+          if (statusEl) statusEl.value = 'bestellen';
         }
       }
     });

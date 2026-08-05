@@ -208,6 +208,15 @@ body.auswertung {
   flex-grow: 2;
 }
 
+@keyframes rowPulse {
+  0% { background-color: rgba(97, 189, 79, 0.25); }
+  100% { background-color: transparent; }
+}
+
+.row-new-pulse {
+  animation: rowPulse 1.5s ease-out;
+}
+
 .filter-group-options {
   margin-top: 10px;
   padding-top: 10px;

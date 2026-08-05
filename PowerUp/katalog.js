@@ -10,6 +10,7 @@ let katalogMaterial = [];
 let lieferantenEinstellungen = null;
 let editIndex = null;
 let activeTab = 'produkte'; // 'produkte' oder 'material'
+let isSavingInline = false;
 
 function getActiveArray() {
   return activeTab === 'produkte' ? katalogProdukte : katalogMaterial;
@@ -119,6 +120,19 @@ function zeichnen() {
   }
 
   t.sizeTo(document.body);
+
+  if (editIndex !== null) {
+    const targetId = editIndex === 'new' ? 'inline-name-new' : 'inline-name-' + editIndex;
+    const focusTask = function() {
+      const inputEl = document.getElementById(targetId);
+      if (inputEl) {
+        inputEl.focus();
+        if (typeof inputEl.select === 'function') inputEl.select();
+      }
+    };
+    requestAnimationFrame(focusTask);
+    setTimeout(focusTask, 50);
+  }
 }
 
 function toggleQuickBtn(index, isChecked) {
@@ -148,6 +162,9 @@ function loeschenEintrag(index) {
 }
 
 function speichernInline(index) {
+  if (isSavingInline) return;
+  isSavingInline = true;
+
   var aktiverKatalog = getActiveArray();
   var nameEl = document.getElementById('inline-name-' + index);
   var preisEl = document.getElementById('inline-preis-' + index);
@@ -159,6 +176,7 @@ function speichernInline(index) {
 
   if (!wert) {
     nameEl.focus();
+    isSavingInline = false;
     return;
   }
 
@@ -166,6 +184,7 @@ function speichernInline(index) {
     var pVal = parseFloat(preis);
     if (isNaN(pVal) || pVal < 0) {
       preisEl.focus();
+      isSavingInline = false;
       return;
     }
   }
@@ -179,6 +198,7 @@ function speichernInline(index) {
   if (exists !== -1 && exists !== (index === 'new' ? -1 : parseInt(index, 10))) {
     showToast('Dieser Artikel existiert bereits in dieser Liste.', true);
     nameEl.focus();
+    isSavingInline = false;
     return;
   }
 
@@ -202,7 +222,12 @@ function speichernInline(index) {
   });
 
   editIndex = null;
-  speichernUndNeuZeichnen();
+  speichernUndNeuZeichnen().then(() => {
+    isSavingInline = false;
+  }).catch(err => {
+    isSavingInline = false;
+    handleError(err);
+  });
 }
 
 document.getElementById('liste').addEventListener('click', function(e) {
@@ -224,7 +249,21 @@ document.getElementById('liste').addEventListener('change', function(e) {
   }
 });
 
-document.getElementById('btn-neu-zeile').addEventListener('click', function() {
+document.addEventListener('keydown', function(e) {
+  if ((e.key === 'Enter' || e.keyCode === 13) && e.target && e.target.classList && e.target.classList.contains('inline-input')) {
+    e.preventDefault();
+    e.stopPropagation();
+    const idStr = e.target.id;
+    if (idStr && idStr.startsWith('inline-')) {
+      const parts = idStr.split('-');
+      const idx = parts[parts.length - 1];
+      speichernInline(idx);
+    }
+  }
+});
+
+document.getElementById('btn-neu-zeile').addEventListener('click', function(e) {
+  if (e) e.preventDefault();
   editIndex = 'new';
   zeichnen();
 });

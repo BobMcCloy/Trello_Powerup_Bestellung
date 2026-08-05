@@ -424,6 +424,17 @@ function wendeFilterAn() {
   const gefilterteKarten = filterCards(alleKarten, options);
   const aggregated = aggregateProductSums(gefilterteKarten, options);
 
+  const badgeEl = document.getElementById('manager-badge');
+  if (badgeEl) {
+    const openCount = aggregated.managerItems ? aggregated.managerItems.length : 0;
+    if (openCount > 0) {
+      badgeEl.textContent = openCount;
+      badgeEl.style.display = 'inline-block';
+    } else {
+      badgeEl.style.display = 'none';
+    }
+  }
+
   if (viewMode === 'manager') {
     let finalManagerItems = aggregated.managerItems;
     let groupByCard = options.groupByCard;
@@ -721,6 +732,12 @@ var debounceTimer;
 document.getElementById('filter-suche').addEventListener('input', function () {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(wendeFilterAn, 250);
+});
+document.getElementById('filter-suche').addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') {
+    this.value = '';
+    wendeFilterAn();
+  }
 });
 document.getElementById('ohne-datum').addEventListener('change', wendeFilterAn);
 document.getElementById('opt-group-card').addEventListener('change', wendeFilterAn);
