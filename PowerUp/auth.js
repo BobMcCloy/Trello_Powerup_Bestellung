@@ -1,5 +1,5 @@
 /* global TrelloPowerUp, CONFIG */
-var t = TrelloPowerUp.iframe({
+const t = TrelloPowerUp.iframe({
   appKey: CONFIG.TRELLO_APP_KEY,
   appName: 'Blumenladen Produktliste'
 });

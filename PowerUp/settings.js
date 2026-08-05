@@ -1,22 +1,23 @@
 /* global TrelloPowerUp, CONFIG, escapeHtml */
-var t = TrelloPowerUp.iframe({
-  appKey: typeof CONFIG !== 'undefined' ? CONFIG.TRELLO_APP_KEY : (typeof APP_KEY !== 'undefined' ? APP_KEY : '')
+const t = TrelloPowerUp.iframe({
+  appKey: typeof CONFIG !== 'undefined' ? CONFIG.TRELLO_APP_KEY : (typeof APP_KEY !== 'undefined' ? APP_KEY : ''),
+  appName: 'Blumenladen Produktliste'
 });
 
-var globalLabels = [];
+let globalLabels = [];
 
 function renderLieferanten(lieferanten) {
-  var container = document.getElementById('lieferanten-container');
+  const container = document.getElementById('lieferanten-container');
   container.innerHTML = '';
 
-  var optionsHtml = '<option value="">- Kein Label ausgewählt -</option>';
-  globalLabels.forEach(function(l) {
-    var displayName = escapeHtml(l.name ? l.name : ('(Ohne Name) - ' + l.color));
+  let optionsHtml = '<option value="">- Kein Label ausgewählt -</option>';
+  globalLabels.forEach(l => {
+    const displayName = escapeHtml(l.name ? l.name : ('(Ohne Name) - ' + l.color));
     optionsHtml += '<option value="' + escapeHtmlAttr(l.id) + '">' + displayName + '</option>';
   });
 
-  lieferanten.forEach(function(lief, index) {
-    var div = document.createElement('div');
+  lieferanten.forEach((lief, index) => {
+    const div = document.createElement('div');
     div.className = 'form-group';
     div.dataset.liefId = lief.id;
     div.style.marginBottom = '15px';
@@ -50,7 +51,7 @@ function renderLieferanten(lieferanten) {
   t.sizeTo(document.body);
 }
 
-var currentLieferanten = [];
+let currentLieferanten = [];
 
 t.render(function() {
   var context = t.getContext();
@@ -72,11 +73,11 @@ t.render(function() {
 
     renderLieferanten(currentLieferanten);
 
-    var statusLabels = res[2] || {};
-    var selectEl = document.getElementById('alles-bestellt-label');
-    var optionsHtml = '<option value="">- Kein Label ausgewählt -</option>';
-    globalLabels.forEach(function(l) {
-      var displayName = escapeHtml(l.name ? l.name : ('(Ohne Name) - ' + l.color));
+    const statusLabels = res[2] || {};
+    const selectEl = document.getElementById('alles-bestellt-label');
+    let optionsHtml = '<option value="">- Kein Label ausgewählt -</option>';
+    globalLabels.forEach(l => {
+      const displayName = escapeHtml(l.name ? l.name : ('(Ohne Name) - ' + l.color));
       optionsHtml += '<option value="' + escapeHtmlAttr(l.id) + '">' + displayName + '</option>';
     });
     selectEl.innerHTML = optionsHtml;
@@ -90,13 +91,13 @@ document.getElementById('add-lief-btn').addEventListener('click', function() {
   renderLieferanten(currentLieferanten);
 });
 
-document.getElementById('save-btn').addEventListener('click', function() {
-  var container = document.getElementById('lieferanten-container');
-  var newLieferanten = [];
+document.getElementById('save-btn').addEventListener('click', () => {
+  const container = document.getElementById('lieferanten-container');
+  const newLieferanten = [];
   
-  var groups = container.querySelectorAll('.form-group');
-  groups.forEach(function(group, idx) {
-    var originalId = group.dataset.liefId || ('lief_' + Date.now() + '_' + idx);
+  const groups = container.querySelectorAll('.form-group');
+  groups.forEach((group, idx) => {
+    const originalId = group.dataset.liefId || ('lief_' + Date.now() + '_' + idx);
     newLieferanten.push({
       id: originalId,
       name: group.querySelector('.lief-name-input').value.trim(),
@@ -104,15 +105,15 @@ document.getElementById('save-btn').addEventListener('click', function() {
     });
   });
 
-  var statusLabels = {
+  const statusLabels = {
     allesBestellt: document.getElementById('alles-bestellt-label').value
   };
 
   Promise.all([
     t.set('board', 'shared', 'lieferanten', newLieferanten),
     t.set('board', 'shared', 'statusLabels', statusLabels)
-  ]).then(function() {
-    var msg = document.getElementById('success-msg');
+  ]).then(() => {
+    const msg = document.getElementById('success-msg');
     msg.style.display = 'block';
     setTimeout(function() {
       t.closePopup();

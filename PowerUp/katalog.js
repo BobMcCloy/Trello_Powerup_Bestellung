@@ -1,21 +1,15 @@
-/* global TrelloPowerUp, CONFIG */
-var t = TrelloPowerUp.iframe({
+(function() {
+/* global TrelloPowerUp, CONFIG, escapeHtml, escapeHtmlAttr, formatEuro, getLieferantName, normalizeLieferantenEinstellungen, showToast, handleError */
+const t = TrelloPowerUp.iframe({
   appKey: CONFIG.TRELLO_APP_KEY,
   appName: 'Blumenladen Produktliste'
 });
 
-var katalogProdukte = [];
-var katalogMaterial = [];
-var lieferantenEinstellungen = null;
-var editIndex = null;
-var activeTab = 'produkte'; // 'produkte' oder 'material'
-
-function getLieferantName(liefKey) {
-  if (!liefKey) return 'Kein Lieferant';
-  var found = lieferantenEinstellungen.find(l => l.id === liefKey);
-  if (found) return found.name;
-  return liefKey;
-}
+let katalogProdukte = [];
+let katalogMaterial = [];
+let lieferantenEinstellungen = null;
+let editIndex = null;
+let activeTab = 'produkte'; // 'produkte' oder 'material'
 
 function getActiveArray() {
   return activeTab === 'produkte' ? katalogProdukte : katalogMaterial;
@@ -28,13 +22,9 @@ function speichernUndNeuZeichnen() {
   }).then(zeichnen).catch(handleError);
 }
 
-function handleError(err) {
-  console.error(err);
-}
-
 function renderLiefOptions(selected) {
-  var html = '<option value="">- Kein Lieferant -</option>';
-  lieferantenEinstellungen.forEach(function (lief) {
+  let html = '<option value="">- Kein Lieferant -</option>';
+  lieferantenEinstellungen.forEach(lief => {
     if (lief.name) {
       html += `<option value="${escapeHtmlAttr(lief.id)}" ${lief.id === selected ? 'selected' : ''}>${escapeHtml(lief.name)}</option>`;
     }
@@ -43,12 +33,12 @@ function renderLiefOptions(selected) {
 }
 
 function zeichnen() {
-  var el = document.getElementById('liste');
-  var aktiverKatalog = getActiveArray();
+  const el = document.getElementById('liste');
+  const aktiverKatalog = getActiveArray();
 
-  var quickCount = 0;
+  let quickCount = 0;
   if (activeTab === 'produkte') {
-    quickCount = aktiverKatalog.filter(function(e) { return e && e.isQuickButton; }).length;
+    quickCount = aktiverKatalog.filter(e => e && e.isQuickButton).length;
   }
 
   var html = '';
@@ -295,3 +285,4 @@ t.render(function () {
     zeichnen();
   });
 });
+})();

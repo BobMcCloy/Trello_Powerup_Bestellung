@@ -1,6 +1,6 @@
 /* global TrelloPowerUp */
 
-var GRAY_ICON = CONFIG.BASE_URL + 'icon-gray.svg';
+const GRAY_ICON = CONFIG.BASE_URL + 'icon-gray.svg';
 
 TrelloPowerUp.initialize({
 
@@ -19,11 +19,12 @@ TrelloPowerUp.initialize({
   },
 
   'card-badges': function (t) {
-    return t.get('card', 'shared', 'produkte', []).then(function (produkte) {
-      return produkte.map(function (p) {
-        var stk = parseFloat(p.stk) || 0;
-        var preis = parseFloat(p.preis) || 0;
-        return { text: stk + 'x ' + p.produkt + ' – ' + preis.toFixed(2).replace('.', ',') + '€' };
+    return t.get('card', 'shared', 'produkte', []).then(produkte => {
+      return produkte.map(p => {
+        const stk = parseInt(p.stk, 10) || 0;
+        const cents = parsePreisToCents(p.preis);
+        const preisStr = formatEuro(cents / 100);
+        return { text: `${stk}x ${p.produkt} – ${preisStr}` };
       });
     });
   },

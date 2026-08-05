@@ -288,12 +288,13 @@ function ladeAuswertung() {
       listenSelect.value = gemerkteListe;
     }
 
-    var url = 'https://api.trello.com/1/boards/' + boardId + '/cards?pluginData=true&fields=name,idList,due';
+    const url = 'https://api.trello.com/1/boards/' + boardId + '/cards?pluginData=true&fields=name,idList,due';
     return apiFetch(url, {}, APP_KEY, trelloToken);
-  }).then(function (cards) {
+  }).then(cards => {
     alleKarten = cards;
     wendeFilterAn();
-  }).catch(function (err) {
+  }).catch(err => {
+    console.error('Fehler beim Laden der Trello-Karten:', err);
     document.getElementById('status').innerHTML = '<span class="fehler">Fehler beim Laden der API.</span>';
   });
 }
@@ -303,79 +304,66 @@ function getMapEntry(map, key, defaultObj) {
   return map[key];
 }
 
-function parsePreisToCents(pStr) {
-  if (!pStr) return 0;
-  var clean = String(pStr).trim();
-  if (clean.includes(',') && clean.includes('.')) {
-    if (clean.lastIndexOf(',') > clean.lastIndexOf('.')) {
-      clean = clean.replace(/\./g, '').replace(',', '.');
-    } else {
-      clean = clean.replace(/,/g, '');
-    }
-  } else {
-    clean = clean.replace(',', '.');
-  }
-  return Math.round(parseFloat(clean) * 100) || 0;
+function getFilterOptionsFromDOM() {
+  return {
+    listenFilter: document.getElementById('filter-liste').value,
+    datumVon: document.getElementById('filter-datum-von').value,
+    datumBis: document.getElementById('filter-datum-bis').value,
+    statusFilter: viewMode === 'manager' ? 'all' : document.getElementById('filter-status').value,
+    suchFilter: document.getElementById('filter-suche').value.toLowerCase(),
+    lieferantFilter: document.getElementById('filter-lieferant').value,
+    ohneDatumEinschliessen: document.getElementById('ohne-datum').checked,
+    groupByCard: document.getElementById('opt-group-card').checked,
+    groupByParent: document.getElementById('opt-group-parent').checked,
+    optGroupArticle: document.getElementById('opt-group-article').checked,
+    viewMode: viewMode
+  };
 }
 
-function wendeFilterAn() {
-  speichereFilterZustand();
-
-  var listenFilter = document.getElementById('filter-liste').value;
-  var datumVon = document.getElementById('filter-datum-von').value;
-  var datumBis = document.getElementById('filter-datum-bis').value;
-  var statusFilter = document.getElementById('filter-status').value;
-  if (viewMode === 'manager') {
-    statusFilter = 'all'; // Im Manager-Modus greift der Status-Filter nicht
-  }
-  var suchFilter = document.getElementById('filter-suche').value.toLowerCase();
-  var lieferantFilter = document.getElementById('filter-lieferant').value;
-  var ohneDatumEinschliessen = document.getElementById('ohne-datum').checked;
-
-  var groupByCard = document.getElementById('opt-group-card').checked;
-  var groupByParent = document.getElementById('opt-group-parent').checked;
-
-  var gefilterteKarten = alleKarten.filter(function (card) {
-    if (listenFilter !== 'all' && card.idList !== listenFilter) return false;
-    if (!card.due) return ohneDatumEinschliessen;
-    if (datumVon || datumBis) {
-      var f = new Date(card.due); f.setHours(0, 0, 0, 0);
-      if (datumVon && f < new Date(datumVon)) return false;
-      if (datumBis && f > new Date(datumBis)) return false;
+function filterCards(cards, options) {
+  return cards.filter(card => {
+    if (options.listenFilter !== 'all' && card.idList !== options.listenFilter) return false;
+    if (!card.due) return options.ohneDatumEinschliessen;
+    if (options.datumVon || options.datumBis) {
+      const f = new Date(card.due); f.setHours(0, 0, 0, 0);
+      if (options.datumVon && f < new Date(options.datumVon)) return false;
+      if (options.datumBis && f > new Date(options.datumBis)) return false;
     }
     return true;
   });
+}
 
-  var summen = {};
-  var managerItems = [];
+function aggregateProductSums(gefilterteKarten, options) {
+  const summen = {};
+  const managerItems = [];
 
-  gefilterteKarten.forEach(function (card) {
-    (card.pluginData || []).forEach(function (pd) {
+  gefilterteKarten.forEach(card => {
+    (card.pluginData || []).forEach(pd => {
       if (pd.idPlugin !== POWERUP_ID) return;
-      var wert; try { wert = JSON.parse(pd.value); } catch (e) { return; }
-      var produkte = wert.produkte;
+      let wert; try { wert = JSON.parse(pd.value); } catch (e) { return; }
+      let produkte = wert.produkte;
       if (typeof produkte === 'string') { try { produkte = JSON.parse(produkte); } catch (e) { produkte = []; } }
       if (!Array.isArray(produkte)) return;
 
-      var cardKey = groupByCard ? card.name : 'Alle Bestellungen';
+      const cardKey = options.groupByCard ? card.name : 'Alle Bestellungen';
 
-      produkte.forEach(function (p) {
-        var hauptName = p.produkt || '';
-        var hauptLiefMatch = (lieferantFilter === 'all') || (lieferantFilter === 'none' && !p.lieferant) || (p.lieferant === lieferantFilter);
-        var hauptMatch = hauptName.toLowerCase().includes(suchFilter) && hauptLiefMatch;
-        var subs = p.unterartikel || [];
+      produkte.forEach(p => {
+        const hauptName = p.produkt || '';
+        const hauptLiefMatch = (options.lieferantFilter === 'all') || (options.lieferantFilter === 'none' && !p.lieferant) || (p.lieferant === options.lieferantFilter);
+        const hauptMatch = hauptName.toLowerCase().includes(options.suchFilter) && hauptLiefMatch;
+        const subs = p.unterartikel || [];
 
-        var valideSubs = subs.filter(function (sub) {
-          var subName = sub.produkt || '';
-          var textMatch = subName.toLowerCase().includes(suchFilter);
-          var statusMatch = (statusFilter === 'all') || (sub.status === statusFilter);
-          var effectiveLief = sub.lieferant || p.lieferant || '';
-          var subLiefMatch = (lieferantFilter === 'all') || (lieferantFilter === 'none' && !effectiveLief) || (effectiveLief === lieferantFilter);
+        const valideSubs = subs.filter(sub => {
+          const subName = sub.produkt || '';
+          const textMatch = subName.toLowerCase().includes(options.suchFilter);
+          const statusMatch = (options.statusFilter === 'all') || (sub.status === options.statusFilter);
+          const effectiveLief = sub.lieferant || p.lieferant || '';
+          const subLiefMatch = (options.lieferantFilter === 'all') || (options.lieferantFilter === 'none' && !effectiveLief) || (effectiveLief === options.lieferantFilter);
           return textMatch && statusMatch && subLiefMatch;
         });
 
-        if (viewMode === 'manager') {
-          valideSubs.forEach(function (sub) {
+        if (options.viewMode === 'manager') {
+          valideSubs.forEach(sub => {
             if (sub.status === 'bestellen' || sub.status === 'zulauf') {
               managerItems.push({
                 card: card, mainId: p.id, mainName: hauptName, sub: sub,
@@ -386,39 +374,39 @@ function wendeFilterAn() {
           return;
         }
 
-        if ((hauptMatch && statusFilter === 'all') || valideSubs.length > 0) {
-          var cMap = getMapEntry(summen, cardKey, { name: cardKey, items: {} });
-          var hPreisCents = parsePreisToCents(p.preis);
-          var hStk = parseInt(p.stk, 10) || 0;
-          var hKey = hauptName + '␟' + (hPreisCents / 100).toFixed(2);
-          var hEntry;
+        if ((hauptMatch && options.statusFilter === 'all') || valideSubs.length > 0) {
+          const cMap = getMapEntry(summen, cardKey, { name: cardKey, items: {} });
+          const hPreisCents = parsePreisToCents(p.preis);
+          const hStk = parseInt(p.stk, 10) || 0;
+          const hKey = hauptName + '␟' + (hPreisCents / 100).toFixed(2);
+          let hEntry;
 
-          if (groupByParent) {
+          if (options.groupByParent) {
             hEntry = getMapEntry(cMap.items, hKey, { name: hauptName, preisCents: hPreisCents, stk: 0, umsatzCents: 0, subs: {} });
             hEntry.stk += hStk;
             hEntry.umsatzCents += hStk * hPreisCents;
 
-            valideSubs.forEach(function (sub) {
-              var sPreisCents = parsePreisToCents(sub.preis);
-              var sStk = parseInt(sub.stk, 10) || 0;
-              var sKey = sub.produkt + '␟' + (sPreisCents / 100).toFixed(2);
-              var sEntry = getMapEntry(hEntry.subs, sKey, { name: sub.produkt, preisCents: sPreisCents, stk: 0, umsatzCents: 0 });
+            valideSubs.forEach(sub => {
+              const sPreisCents = parsePreisToCents(sub.preis);
+              const sStk = parseInt(sub.stk, 10) || 0;
+              const sKey = sub.produkt + '␟' + (sPreisCents / 100).toFixed(2);
+              const sEntry = getMapEntry(hEntry.subs, sKey, { name: sub.produkt, preisCents: sPreisCents, stk: 0, umsatzCents: 0 });
               sEntry.stk += sStk;
-              sEntry.umsatzCents = 0; // Unterartikel zählen nicht zum Umsatz
+              sEntry.umsatzCents = 0;
             });
           } else {
-            if (hauptMatch && statusFilter === 'all') {
+            if (hauptMatch && options.statusFilter === 'all') {
               hEntry = getMapEntry(cMap.items, hKey, { name: hauptName, preisCents: hPreisCents, stk: 0, umsatzCents: 0 });
               hEntry.stk += hStk;
               hEntry.umsatzCents += hStk * hPreisCents;
             }
-            valideSubs.forEach(function (sub) {
-              var sPreisCents = parsePreisToCents(sub.preis);
-              var sStk = parseInt(sub.stk, 10) || 0;
-              var sKey = '↳ ' + sub.produkt + '␟' + (sPreisCents / 100).toFixed(2);
-              var sEntry = getMapEntry(cMap.items, sKey, { name: sub.produkt, preisCents: sPreisCents, stk: 0, umsatzCents: 0 });
+            valideSubs.forEach(sub => {
+              const sPreisCents = parsePreisToCents(sub.preis);
+              const sStk = parseInt(sub.stk, 10) || 0;
+              const sKey = '↳ ' + sub.produkt + '␟' + (sPreisCents / 100).toFixed(2);
+              const sEntry = getMapEntry(cMap.items, sKey, { name: sub.produkt, preisCents: sPreisCents, stk: 0, umsatzCents: 0 });
               sEntry.stk += sStk;
-              sEntry.umsatzCents = 0; // Unterartikel zählen nicht zum Umsatz
+              sEntry.umsatzCents = 0;
             });
           }
         }
@@ -426,14 +414,25 @@ function wendeFilterAn() {
     });
   });
 
-  if (viewMode === 'manager') {
-    var optGroupArticle = document.getElementById('opt-group-article').checked;
-    var finalManagerItems = managerItems;
+  return { summen: summen, managerItems: managerItems };
+}
 
-    if (optGroupArticle) {
-      var groupMap = {};
-      managerItems.forEach(function (item) {
-        var key = item.sub.produkt.trim().toLowerCase() + '␟' + (item.lieferant || '').trim().toLowerCase() + '␟' + item.sub.status;
+function wendeFilterAn() {
+  speichereFilterZustand();
+
+  const options = getFilterOptionsFromDOM();
+  const gefilterteKarten = filterCards(alleKarten, options);
+  const aggregated = aggregateProductSums(gefilterteKarten, options);
+
+  if (viewMode === 'manager') {
+    let finalManagerItems = aggregated.managerItems;
+    let groupByCard = options.groupByCard;
+    let groupByParent = options.groupByParent;
+
+    if (options.optGroupArticle) {
+      const groupMap = {};
+      aggregated.managerItems.forEach(item => {
+        const key = item.sub.produkt.trim().toLowerCase() + '␟' + (item.lieferant || '').trim().toLowerCase() + '␟' + item.sub.status;
         if (!groupMap[key]) {
           groupMap[key] = {
             card: { name: '(Mehrere)' },
@@ -454,7 +453,7 @@ function wendeFilterAn() {
 
     zeichneManager(finalManagerItems, groupByCard, groupByParent, gefilterteKarten.length);
   } else {
-    zeichneAuswertung(summen, groupByCard, groupByParent, gefilterteKarten.length);
+    zeichneAuswertung(aggregated.summen, options.groupByCard, options.groupByParent, gefilterteKarten.length);
   }
 }
 
@@ -666,7 +665,7 @@ function aktualisiereDruckKopf() {
 function csvFeld(wert) {
   wert = String(wert).trim();
   if (/^[=+\-@]/.test(wert)) {
-    wert = "\t" + wert;
+    wert = "'" + wert;
   }
   if (/[;"\n\r]/.test(wert)) { return '"' + wert.replace(/"/g, '""') + '"'; }
   return wert;

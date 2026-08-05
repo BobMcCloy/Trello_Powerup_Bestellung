@@ -1,16 +1,17 @@
 /* global TrelloPowerUp, CONFIG, escapeHtml, escapeHtmlAttr, getLieferantName, handleError, formatEuro, persistProdukte, showToast */
 (function() {
   var t = TrelloPowerUp.iframe({
-    appKey: typeof CONFIG !== 'undefined' ? CONFIG.TRELLO_APP_KEY : (typeof APP_KEY !== 'undefined' ? APP_KEY : '')
+    appKey: typeof CONFIG !== 'undefined' ? CONFIG.TRELLO_APP_KEY : (typeof APP_KEY !== 'undefined' ? APP_KEY : ''),
+    appName: 'Blumenladen Produktliste'
   });
   
-  var lieferantenEinstellungen = null;
-  var currentMainIdForSub = null;
-  var katalogObjekte = [];
-  var editId = null;
-  var editSubId = null;
-  var letzterHauptartikelId = null;
-  var isSaving = false;
+  let lieferantenEinstellungen = null;
+  let currentMainIdForSub = null;
+  let katalogObjekte = [];
+  let editId = null;
+  let editSubId = null;
+  let letzterHauptartikelId = null;
+  let isSaving = false;
 
   function neueId() {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -19,34 +20,13 @@
     return Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
   }
 
-  function parsePreisToCents(pStr) {
-    if (!pStr) return 0;
-    var clean = String(pStr).trim();
-    if (clean.includes(',') && clean.includes('.')) {
-      if (clean.lastIndexOf(',') > clean.lastIndexOf('.')) {
-        clean = clean.replace(/\./g, '').replace(',', '.');
-      } else {
-        clean = clean.replace(/,/g, '');
-      }
-    } else {
-      clean = clean.replace(',', '.');
-    }
-    return Math.round(parseFloat(clean) * 100) || 0;
-  }
-
   Promise.all([
     t.get('board', 'shared', 'lieferanten'),
     t.get('board', 'shared', 'katalogProdukte', []),
     t.get('board', 'shared', 'katalogMaterial', [])
   ]).then(function (res) {
     var rawLief = res[0];
-    lieferantenEinstellungen = [];
-    if (rawLief && typeof rawLief === 'object' && !Array.isArray(rawLief)) {
-      if (rawLief.lief1 && rawLief.lief1.name) lieferantenEinstellungen.push({ id: 'lief1', name: rawLief.lief1.name });
-      if (rawLief.lief2 && rawLief.lief2.name) lieferantenEinstellungen.push({ id: 'lief2', name: rawLief.lief2.name });
-    } else if (Array.isArray(rawLief)) {
-      lieferantenEinstellungen = rawLief;
-    }
+    lieferantenEinstellungen = normalizeLieferantenEinstellungen(rawLief);
 
     var katProd = res[1];
     var katMat = res[2];
@@ -89,7 +69,7 @@
           btn.className = 'quick-btn';
           btn.title = qb.name;
           btn.textContent = qb.name;
-          var p = (parseFloat(qb.preis) || 0).toFixed(2).replace('.', ',');
+          var p = (parseFloat(qb.preis) || 0).toFixed(2);
           btn.addEventListener('click', function() {
             document.getElementById('artikel').value = qb.name;
             document.getElementById('preis').value = p;
@@ -173,7 +153,7 @@
       var pVal = parseFloat(clean);
       if (isNaN(pVal) || pVal < 0) return { el: preisEl };
       preisCents = Math.round(pVal * 100);
-      preis = (preisCents / 100).toFixed(2).replace('.', ',');
+      preis = (preisCents / 100).toFixed(2);
     }
 
     return { valid: true, stk: stk, artikel: artikel, preis: preis };
@@ -302,7 +282,7 @@
         editId = main.id;
         document.getElementById('stk').value = main.stk || '1';
         document.getElementById('artikel').value = main.produkt || '';
-        document.getElementById('preis').value = (main.preis || '').replace('.', ',');
+        document.getElementById('preis').value = (main.preis || '').replace(',', '.');
         document.getElementById('speichern').textContent = 'Speichern';
         openOverlay('haupt');
       } else if (type === 'sub') {
@@ -312,7 +292,7 @@
         editSubId = s.id;
         document.getElementById('sub-stk').value = s.stk || '1';
         document.getElementById('sub-art').value = s.produkt || '';
-        document.getElementById('sub-preis').value = (s.preis || '').replace('.', ',');
+        document.getElementById('sub-preis').value = (s.preis || '').replace(',', '.');
         document.getElementById('sub-lieferant').value = s.lieferant || '';
         document.getElementById('sub-status').value = s.status || 'bestellen';
         document.getElementById('btn-sub-speichern').textContent = 'Speichern';
@@ -323,8 +303,8 @@
 
   function zeichnen() {
     if (isSaving) return;
-    t.get('card', 'shared', 'produkte', []).then(function (produkte) {
-      var el = document.getElementById('inhalt');
+    t.get('card', 'shared', 'produkte', []).then(produkte => {
+      const el = document.getElementById('inhalt');
 
       if (!produkte.length) {
         el.innerHTML = '<div class="leer">Noch keine Artikel vorhanden.</div>';
@@ -336,9 +316,12 @@
         letzterHauptartikelId = produkte[produkte.length - 1].id;
       }
 
-      var gesamtCents = 0;
-      var html = `<div class="tabellen-rahmen">
-        <table>
+      let gesamtCents = 0;
+      const fragment = document.createDocumentFragment();
+      const wrapper = document.createElement('div');
+      wrapper.className = 'tabellen-rahmen';
+
+      let html = `<table>
           <thead>
             <tr>
               <th class="w-30"></th>
@@ -351,20 +334,20 @@
           </thead>
           <tbody>`;
 
-      produkte.forEach(function (p, i) {
-        var stk = parseInt(p.stk, 10) || 0;
-        var preisCents = parsePreisToCents(p.preis);
-        var zwischensummeCents = stk * preisCents;
-        var subs = p.unterartikel || [];
+      produkte.forEach((p, i) => {
+        const stk = parseInt(p.stk, 10) || 0;
+        const preisCents = parsePreisToCents(p.preis);
+        const zwischensummeCents = stk * preisCents;
+        const subs = p.unterartikel || [];
 
-        var subSummeCents = 0;
+        let subSummeCents = 0;
         if (subs && subs.length > 0) {
-          subs.forEach(function (sub) {
+          subs.forEach(sub => {
             subSummeCents += (parseInt(sub.stk, 10) || 0) * parsePreisToCents(sub.preis);
           });
         }
-        var subSummeHtml = subSummeCents > 0 ? `<br><span class="text-light" style="font-size: 11px;">+ ${formatEuro(subSummeCents / 100)} Extras</span>` : '';
-        var liefHtml = p.lieferant ? `<br><span class="lief-text">${escapeHtml(getLieferantName(p.lieferant, lieferantenEinstellungen))}</span>` : '';
+        const subSummeHtml = subSummeCents > 0 ? `<br><span class="text-light" style="font-size: 11px;">+ ${formatEuro(subSummeCents / 100)} Extras</span>` : '';
+        const liefHtml = p.lieferant ? `<br><span class="lief-text">${escapeHtml(getLieferantName(p.lieferant, lieferantenEinstellungen))}</span>` : '';
 
         html += `<tr>
           <td><button class="expand-btn" data-action="toggleSub" data-idx="${i}" id="btn-${i}">${subs.length > 0 ? '−' : '+'}</button></td>
@@ -385,12 +368,12 @@
 
         if (subs.length > 0) {
           html += `<table class="sub-table tabellen-rahmen"><tbody>`;
-          subs.forEach(function (sub) {
-            var subStk = parseInt(sub.stk, 10) || 0;
-            var subPreisCents = parsePreisToCents(sub.preis);
-            var subLiefHtml = sub.lieferant ? `<br><span class="sub-lief-text">${escapeHtml(getLieferantName(sub.lieferant, lieferantenEinstellungen))}</span>` : '';
+          subs.forEach(sub => {
+            const subStk = parseInt(sub.stk, 10) || 0;
+            const subPreisCents = parsePreisToCents(sub.preis);
+            const subLiefHtml = sub.lieferant ? `<br><span class="sub-lief-text">${escapeHtml(getLieferantName(sub.lieferant, lieferantenEinstellungen))}</span>` : '';
 
-            var rowClass = '';
+            let rowClass = '';
             if (sub.status === 'bestellen') rowClass = 'row-bestellen';
             else if (sub.status === 'zulauf') rowClass = 'row-zulauf';
             else if (sub.status === 'vorhanden') rowClass = 'row-vorhanden';
@@ -418,7 +401,7 @@
         }
         gesamtCents += zwischensummeCents;
 
-        var hint = (p.id === letzterHauptartikelId) ? ' [ n ]' : '';
+        const hint = (p.id === letzterHauptartikelId) ? ' [ n ]' : '';
         html += `<button class="btn-hinzufuegen btn-small mt-5" data-action="openSubOverlay" data-id="${escapeHtmlAttr(p.id)}">+ Unterartikel hinzufügen${hint}</button>`;
         html += `</div></td></tr>`;
       });
@@ -431,9 +414,11 @@
             <td class="zahl">${formatEuro(gesamtCents / 100)}</td>
           </tr>
         </tfoot>
-      </table></div>`;
+      </table>`;
 
-      el.innerHTML = html;
+      wrapper.innerHTML = html;
+      fragment.appendChild(wrapper);
+      el.replaceChildren(fragment);
       t.sizeTo(document.body);
     });
   }
@@ -472,7 +457,7 @@
       var found = katalogObjekte.find(k => k.name === val);
       if (found) {
         if (found.preis && !document.getElementById(preisId).value) {
-          document.getElementById(preisId).value = found.preis;
+          document.getElementById(preisId).value = String(found.preis).replace(',', '.');
         }
         if (liefEl && found.lieferant && !liefEl.value) {
           liefEl.value = found.lieferant;
@@ -483,6 +468,17 @@
 
   attachAutoFill('artikel', 'preis');
   attachAutoFill('sub-art', 'sub-preis', 'sub-lieferant');
+
+  var btnOpenHaupt = document.getElementById('btn-open-haupt');
+  if (btnOpenHaupt) {
+    btnOpenHaupt.addEventListener('click', function() {
+      openOverlay('haupt');
+    });
+  }
+
+  document.querySelectorAll('.btn-close-overlay').forEach(function(btn) {
+    btn.addEventListener('click', closeOverlays);
+  });
 
   ['stk', 'artikel', 'preis'].forEach(function (id) {
     var el = document.getElementById(id);
@@ -516,12 +512,14 @@
   });
 
   document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    
     if (e.key === 'Escape') {
       closeOverlays();
       return;
     }
     
-    var tag = e.target.tagName;
+    const tag = e.target.tagName;
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
 
     if (e.key === '+') {

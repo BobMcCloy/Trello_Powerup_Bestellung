@@ -1,5 +1,5 @@
 /* global TrelloPowerUp, CONFIG */
-var t = TrelloPowerUp.iframe({
+const t = TrelloPowerUp.iframe({
   appKey: CONFIG.TRELLO_APP_KEY,
   appName: 'Blumenladen Produktliste'
 });
@@ -22,8 +22,8 @@ document.getElementById('btn-katalog').addEventListener('click', function () {
   });
 });
 
-t.render(function () {
-  var context = t.getContext();
+t.render(() => {
+  const context = t.getContext();
   if (context && context.theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
   else document.documentElement.removeAttribute('data-theme');
 });

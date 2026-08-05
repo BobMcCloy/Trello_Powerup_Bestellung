@@ -12,7 +12,7 @@
 <body class="karte">
 
   <div class="top-bar">
-    <button class="btn-hinzufuegen" onclick="openHauptOverlay()">+ Artikel hinzufügen [ + ]</button>
+    <button id="btn-open-haupt" class="btn-hinzufuegen">+ Artikel hinzufügen [ + ]</button>
   </div>
 
   <div id="inhalt"></div>
@@ -24,7 +24,7 @@
     <div class="overlay-box">
       <div class="overlay-header">
         Neues Produkt (Hauptartikel)
-        <button class="close-btn" onclick="closeOverlays()">✕</button>
+        <button class="close-btn btn-close-overlay">✕</button>
       </div>
       <div id="quick-buttons-container" class="quick-btn-grid" style="display:none; margin-bottom: 15px;"></div>
       
@@ -53,7 +53,7 @@
     <div class="overlay-box">
       <div class="overlay-header">
         Material / Extra hinzufügen
-        <button class="close-btn" onclick="closeOverlays()">✕</button>
+        <button class="close-btn btn-close-overlay">✕</button>
       </div>
       <div class="form-row">
         <div class="input-group col-stk">
@@ -85,7 +85,7 @@
           <option value="vorhanden" selected>Vorhanden</option>
         </select>
       </div>
-      <button id="btn-sub-speichern" class="btn-hinzufuegen mt-5" onclick="addSub()">Unterartikel hinzufügen</button>
+      <button id="btn-sub-speichern" class="btn-hinzufuegen mt-5">Unterartikel hinzufügen</button>
     </div>
   </div>
 

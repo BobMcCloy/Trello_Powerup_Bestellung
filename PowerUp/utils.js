@@ -1,6 +1,4 @@
-// utils.js
-
-var STANDARD_KATALOG = [
+const STANDARD_KATALOG = [
   { name: 'Steckschaum', preis: '', lieferant: '' },
   { name: 'Blumendraht', preis: '', lieferant: '' },
   { name: 'Klebeband', preis: '', lieferant: '' },
@@ -13,14 +11,29 @@ var STANDARD_KATALOG = [
   { name: 'Rose Gelb', preis: '', lieferant: '' }
 ];
 
+function parsePreisToCents(pStr) {
+  if (!pStr) return 0;
+  let clean = String(pStr).trim();
+  if (clean.includes(',') && clean.includes('.')) {
+    if (clean.lastIndexOf(',') > clean.lastIndexOf('.')) {
+      clean = clean.replace(/\./g, '').replace(',', '.');
+    } else {
+      clean = clean.replace(/,/g, '');
+    }
+  } else {
+    clean = clean.replace(',', '.');
+  }
+  return Math.round(parseFloat(clean) * 100) || 0;
+}
+
 function formatEuro(n) { 
-  var val = parseFloat(n) || 0;
+  const val = parseFloat(n) || 0;
   return val.toFixed(2).replace('.', ',') + ' €'; 
 }
 
 function escapeHtml(str) { 
   if (str === null || str === undefined) return '';
-  var div = document.createElement('div'); 
+  const div = document.createElement('div'); 
   div.textContent = String(str); 
   return div.innerHTML; 
 }
@@ -31,7 +44,7 @@ function escapeHtmlAttr(str) {
 }
 
 function showToast(message, isError) {
-  var container = document.getElementById('toast-container');
+  let container = document.getElementById('toast-container');
   if (!container) {
     container = document.createElement('div');
     container.id = 'toast-container';
@@ -45,7 +58,7 @@ function showToast(message, isError) {
     document.body.appendChild(container);
   }
   
-  var toast = document.createElement('div');
+  const toast = document.createElement('div');
   toast.style.padding = '12px 20px';
   toast.style.borderRadius = '4px';
   toast.style.color = 'white';
@@ -56,9 +69,9 @@ function showToast(message, isError) {
   
   container.appendChild(toast);
   
-  setTimeout(function() {
+  setTimeout(() => {
     toast.style.opacity = '0';
-    setTimeout(function() {
+    setTimeout(() => {
       if (toast.parentElement) toast.parentElement.removeChild(toast);
     }, 300);
   }, 3000);
@@ -71,7 +84,7 @@ function handleError(err) {
 
 function normalizeLieferantenEinstellungen(data) {
   if (data && typeof data === 'object' && !Array.isArray(data)) {
-    var lieferanten = [];
+    const lieferanten = [];
     if (data.lief1 && data.lief1.name) lieferanten.push({ id: 'lief1', name: data.lief1.name, labelId: data.lief1.labelId });
     if (data.lief2 && data.lief2.name) lieferanten.push({ id: 'lief2', name: data.lief2.name, labelId: data.lief2.labelId });
     return lieferanten;
@@ -83,7 +96,7 @@ function normalizeLieferantenEinstellungen(data) {
 
 function getLieferantName(liefKey, settingsArray) {
   if (!liefKey) return 'Kein Lieferant';
-  var found = (settingsArray || []).find(function(l) { return l.id === liefKey; });
+  const found = (settingsArray || []).find(l => l.id === liefKey);
   return found ? found.name : liefKey;
 }
 
@@ -111,16 +124,16 @@ function syncCardLabels(t, cardId, produkte) {
   return Promise.all([
     t.get('board', 'shared', 'lieferanten'),
     t.get('board', 'shared', 'statusLabels')
-  ]).then(function(res) {
-    var lieferanten = normalizeLieferantenEinstellungen(res[0]);
-    var statusLabels = res[1] || {};
+  ]).then(res => {
+    const lieferanten = normalizeLieferantenEinstellungen(res[0]);
+    const statusLabels = res[1] || {};
 
-    var activeLieferanten = new Set();
-    var hasBestellen = false;
-    var hasZulauf = false;
+    const activeLieferanten = new Set();
+    let hasBestellen = false;
+    let hasZulauf = false;
 
-    produkte.forEach(function(p) {
-      (p.unterartikel || []).forEach(function(sub) {
+    produkte.forEach(p => {
+      (p.unterartikel || []).forEach(sub => {
         if (sub.status === 'bestellen') hasBestellen = true;
         if (sub.status === 'zulauf') hasZulauf = true;
         if (sub.status === 'bestellen') {
@@ -129,24 +142,24 @@ function syncCardLabels(t, cardId, produkte) {
       });
     });
 
-    var shouldHaveAllesBestellt = (!hasBestellen && hasZulauf);
+    const shouldHaveAllesBestellt = (!hasBestellen && hasZulauf);
     
-    return t.getRestApi().getToken().then(function(token) {
+    return t.getRestApi().getToken().then(token => {
       if (!token) return Promise.resolve();
-      var appKey = typeof CONFIG !== 'undefined' ? CONFIG.TRELLO_APP_KEY : (typeof APP_KEY !== 'undefined' ? APP_KEY : '');
-      var cId = encodeURIComponent(cardId);
+      const appKey = typeof CONFIG !== 'undefined' ? CONFIG.TRELLO_APP_KEY : (typeof APP_KEY !== 'undefined' ? APP_KEY : '');
+      const cId = encodeURIComponent(cardId);
       
       return apiFetch('https://api.trello.com/1/cards/' + cId + '?fields=idLabels', {}, appKey, token)
-      .then(function(cardData) {
-         var activeLabelIds = cardData.idLabels || [];
-         var desiredLabelIds = activeLabelIds.slice();
+      .then(cardData => {
+         const activeLabelIds = cardData.idLabels || [];
+         const desiredLabelIds = activeLabelIds.slice();
 
-         lieferanten.forEach(function(lief) {
-            var labelId = lief.labelId;
+         lieferanten.forEach(lief => {
+            const labelId = lief.labelId;
             if (!labelId) return;
 
-            var shouldHave = activeLieferanten.has(lief.id);
-            var index = desiredLabelIds.indexOf(labelId);
+            const shouldHave = activeLieferanten.has(lief.id);
+            const index = desiredLabelIds.indexOf(labelId);
             
             if (shouldHave && index === -1) {
                desiredLabelIds.push(labelId);
@@ -156,8 +169,8 @@ function syncCardLabels(t, cardId, produkte) {
          });
 
          if (statusLabels.allesBestellt) {
-           var labelId = statusLabels.allesBestellt;
-           var index = desiredLabelIds.indexOf(labelId);
+           const labelId = statusLabels.allesBestellt;
+           const index = desiredLabelIds.indexOf(labelId);
            if (shouldHaveAllesBestellt && index === -1) {
              desiredLabelIds.push(labelId);
            } else if (!shouldHaveAllesBestellt && index !== -1) {
@@ -165,9 +178,7 @@ function syncCardLabels(t, cardId, produkte) {
            }
          }
 
-         var changed = desiredLabelIds.length !== activeLabelIds.length || !desiredLabelIds.every(function(id) {
-           return activeLabelIds.includes(id);
-         });
+         const changed = desiredLabelIds.length !== activeLabelIds.length || !desiredLabelIds.every(id => activeLabelIds.includes(id));
 
          if (changed) {
             return apiFetch('https://api.trello.com/1/cards/' + cId, {
@@ -177,7 +188,7 @@ function syncCardLabels(t, cardId, produkte) {
             }, appKey, token);
          }
          return Promise.resolve();
-      }).catch(function(err) {
+      }).catch(err => {
         if (err.message === 'RateLimit') {
            console.warn('Trello API Rate Limit erreicht beim Label Sync (ignoriert)');
         } else {
